@@ -548,9 +548,12 @@ function _generateSceneFromText(text) {
 
 function fitCameraToObjects() {
 
-    if (currentObjects.length === 0) return;
-
-    
+    // If there are no objects to frame, reset the camera to the default view.
+    if (currentObjects.length === 0) {
+        resetView();
+        return;
+    }
+    // Compute the bounding box of all current objects
 
     const box = new THREE.Box3();
 
