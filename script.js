@@ -10,7 +10,7 @@ let currentObjects = [];
 
 // Initialize Three.js scene
 
-function initScene() {
+async function initScene() {
 
     scene = new THREE.Scene();
 
@@ -79,7 +79,7 @@ function initScene() {
     // Restore state from history
     const lastState = historyManager.getCurrentState();
     document.getElementById('textInput').value = lastState;
-    _generateSceneFromText(lastState);
+    await _generateSceneFromText(lastState);
     updateUndoRedoStates();
 
     
@@ -323,15 +323,15 @@ function extractColor(text) {
 
 
 
-function generateCAD() {
+async function generateCAD() {
 
     const text = document.getElementById('textInput').value;
     historyManager.push(text);
-    _generateSceneFromText(text);
+    await _generateSceneFromText(text);
     updateUndoRedoStates();
 }
 
-function _generateSceneFromText(text) {
+async function _generateSceneFromText(text) {
     updateHistory(text);
 
     // Clear existing objects
@@ -343,6 +343,7 @@ function _generateSceneFromText(text) {
     
     // If the input is empty, just clear the scene and stop.
     if (!text.trim()) {
+        fitCameraToObjects(); // This will correctly reset the view
         return;
     }
 
@@ -354,8 +355,8 @@ function _generateSceneFromText(text) {
     const namedMeshMap = new Map();
     
     
-
-    commands.forEach((cmd, index) => {
+    // Use a for...of loop to allow for await inside the loop
+    for (const [index, cmd] of commands.entries()) {
 
         // Handle modification commands
         if (cmd.type === 'modify') {
@@ -476,7 +477,7 @@ function _generateSceneFromText(text) {
                     loadingIndicator.style.display = 'flex';
 
                     // Perform the CSG operation after a short delay to allow UI to update
-                    setTimeout(() => {
+                    await new Promise(resolve => setTimeout(resolve, 50)); // A short delay allows the browser to render the loader before blocking
                         let resultMesh;
                         if (csgOperation === 'subtract') {
                             resultMesh = Transforms.performSubtraction(mesh, targetMesh);
@@ -506,7 +507,6 @@ function _generateSceneFromText(text) {
 
                         // Hide loading indicator
                         loadingIndicator.style.display = 'none';
-                    }, 50); // A short delay allows the browser to render the loader before blocking
 
                 } else {
                     // If target not found, just add the "tool" shape as a normal object
@@ -530,9 +530,7 @@ function _generateSceneFromText(text) {
             }
             currentObjects.push(...createdMeshes);
         }
-    });
-
-    
+    }
 
     // Auto-fit camera if objects were created
 
@@ -548,7 +546,7 @@ function _generateSceneFromText(text) {
 
 function fitCameraToObjects() {
 
-    // If there are no objects to frame, reset the camera to the default view.
+    // If there are no objects to frame, reset the camera to the default view
     if (currentObjects.length === 0) {
         resetView();
         return;
@@ -604,20 +602,20 @@ function resetView() {
     controls.reset();
 }
 
-function undoLastCommand() {
+async function undoLastCommand() {
     const previousText = historyManager.undo();
     if (previousText !== null) {
         document.getElementById('textInput').value = previousText;
-        _generateSceneFromText(previousText);
+        await _generateSceneFromText(previousText);
         updateUndoRedoStates();
     }
 }
 
-function redoLastCommand() {
+async function redoLastCommand() {
     const nextState = historyManager.redo();
     if (nextState !== null) {
         document.getElementById('textInput').value = nextState;
-        _generateSceneFromText(nextState);
+        await _generateSceneFromText(nextState);
         updateUndoRedoStates();
     }
 }
