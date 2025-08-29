@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to CAD Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.rawgit.com/chandlerprall/THREE.CSGMesh/v1.0.0/THREE.CSGMesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h1>🔧 Text to CAD</h1>
+            
+            <div class="input-group">
+                <label for="textInput">Describe your 3D object:</label>
+                <textarea id="textInput" placeholder="e.g., 'Create a blue cube that is 2 units wide' or 'Make a red sphere with radius 1.5'"></textarea>
+            </div>
+            
+            <button id="generate-btn">Generate 3D Model</button>
+            <div class="examples">
+                <h3 class="examples-title">💡 Try these examples:</h3>
+                
+                <div class="example" data-example-text="Create a blue cube with width 2, height 1.5, and depth 1">
+                    <div class="example-title">Basic Cube</div>
+                    <div class="example-text">Create a blue cube with width 2, height 1.5, and depth 1</div>
+                </div>
+                
+                <div class="example" data-example-text="Make a red sphere with radius 1.5">
+                    <div class="example-title">Simple Sphere</div>
+                    <div class="example-text">Make a red sphere with radius 1.5</div>
+                </div>
+                
+                <div class="example" data-example-text="Create a green cylinder with radius 0.8 and height 3">
+                    <div class="example-title">Cylinder</div>
+                    <div class="example-text">Create a green cylinder with radius 0.8 and height 3</div>
+                </div>
+                
+                <div class="example" data-example-text="Make a yellow torus with inner radius 0.5 and outer radius 1.2">
+                    <div class="example-title">Torus (Donut)</div>
+                    <div class="example-text">Make a yellow torus with inner radius 0.5 and outer radius 1.2</div>
+                </div>
+                
+                <div class="example" data-example-text="Create a purple cone with base radius 1 and height 2.5">
+                    <div class="example-title">Cone</div>
+                    <div class="example-text">Create a purple cone with base radius 1 and height 2.5</div>
+                </div>
+                
+                <div class="example" data-example-text="Make 3 red cubes arranged in a line with size 1">
+                    <div class="example-title">Multiple Objects</div>
+                    <div class="example-text">Make 3 red cubes arranged in a line with size 1</div>
+                </div>
+                
+                <div class="example" data-example-text="Make a pink torus with radius 2 and tube radius 0.5">
+                    <div class="example-title">Torus (by tube)</div>
+                    <div class="example-text">Make a pink torus with radius 2 and tube radius 0.5</div>
+                </div>
+
+                <div class="example" data-example-text="Put a green cube at x -3, y 1, z 2">
+                    <div class="example-title">Positioned Object</div>
+                    <div class="example-text">Put a green cube at x -3, y 1, z 2</div>
+                </div>
+
+                <div class="example" data-example-text="Create a cube rotated 45 degrees on the y axis">
+                    <div class="example-title">Rotated Object</div>
+                    <div class="example-text">Create a cube rotated 45 degrees on the y axis</div>
+                </div>
+
+                <div class="example" data-example-text="Create a cylinder with height 3. Then put a cone on top of it.">
+                    <div class="example-title">Combined Shapes</div>
+                    <div class="example-text">Create a cylinder with height 3. Then put a cone on top of it.</div>
+                </div>
+
+                <div class="example" data-example-text="Create a cube with size 3. Then create a cylinder with height 4 and radius 0.5 and cut it through the cube.">
+                    <div class="example-title">Subtraction (with Ghost)</div>
+                    <div class="example-text">See a 'ghost' of the tool shape before the CSG operation completes.</div>
+                </div>
+
+                <div class="example" data-example-text="Create a cube with size 2. Then create a sphere with radius 1.2 and unite it with the cube.">
+                    <div class="example-title">Union</div>
+                    <div class="example-text">Create a cube... Then create a sphere... and unite it with the cube.</div>
+                </div>
+
+                <div class="example" data-example-text="Create a cube with size 2. Then create a sphere with radius 1.2 and intersect it with the cube.">
+                    <div class="example-title">Intersection</div>
+                    <div class="example-text">Create a cube... Then create a sphere... and intersect it with the cube.</div>
+                </div>
+
+               <div class="example" data-example-text="Create a pyramid with radius 1.5 and height 3.">
+                    <div class="example-title">Pyramid</div>
+                    <div class="example-text">Create a pyramid with radius 1.5 and height 3.</div>
+                </div>
+            </div>
+            <div class="history">
+                <h3 class="history-title">Command History</h3>
+                <ul id="history-list">
+                </ul>
+            </div>
+        </div>
+        
+        <div class="viewer">
+            <div class="controls">
+                <button id="reset-view-btn" class="control-btn">Reset View</button>
+                <button id="export-btn" class="control-btn">Export STL</button>
+            </div>
+            <div class="info">
+                L-Click: Rotate | R-Click: Pan | Wheel: Zoom
+            </div>
+        </div>
+    </div>
+    <script src="script.js" type="module" defer></script>
+</body>
+</html>
