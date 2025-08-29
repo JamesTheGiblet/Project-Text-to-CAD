@@ -173,8 +173,28 @@ function parseText(text) {
     const commands = [];
 
     const sentences = text.toLowerCase().split(/[.!?]+/).filter(s => s.trim());
-
     sentences.forEach(sentence => {
+        // --- Try parsing modification commands first ---
+        let modificationCommand = Transforms.extractColorChange(sentence) || 
+                              Transforms.extractMove(sentence) ||
+                              Transforms.extractRotationChange(sentence) ||
+                              Transforms.extractScaleChange(sentence);
+        if (modificationCommand) {
+            if (modificationCommand.action === 'color') {
+                // For color changes, we need to resolve the color name to a hex value.
+                modificationCommand.color = extractColor(`a ${modificationCommand.colorName} object`);
+                if (modificationCommand.color) {
+                     commands.push(modificationCommand);
+                     return; // This sentence is a modification command, so we're done with it.
+                }
+            } else {
+                // For other modifications like 'move', 'rotate', 'scale'
+                commands.push(modificationCommand);
+                return; // This sentence is a modification command, so we're done with it.
+            }
+        }
+
+        // --- If not a modification, parse shape creation commands ---
         let commandCreated = false;
         // Iterate over the defined shapes to find a match
         for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
@@ -196,7 +216,6 @@ function parseText(text) {
                 shapeConfig.parseParams(sentence, cmd);
 
                 // Parse common attributes applicable to all shapes
-                cmd.name = Transforms.extractName(sentence);
                 cmd.name = Transforms.extractName(sentence);
                 cmd.position = Transforms.extractPosition(sentence);
                 cmd.rotation = Transforms.extractRotation(sentence);
@@ -336,6 +355,44 @@ function _generateSceneFromText(text) {
     
 
     commands.forEach((cmd, index) => {
+
+        // Handle modification commands
+        if (cmd.type === 'modify') {
+            if (cmd.action === 'color' && cmd.target.type === 'name') {
+                if (namedMeshMap.has(cmd.target.value)) {
+                    const targetData = namedMeshMap.get(cmd.target.value);
+                    targetData.mesh.material.color.set(cmd.color);
+                }
+            } else if (cmd.action === 'move' && cmd.target.type === 'name') {
+                if (namedMeshMap.has(cmd.target.value)) {
+                    const targetData = namedMeshMap.get(cmd.target.value);
+                    const mesh = targetData.mesh;
+                    // Apply new position, keeping existing coordinates if not specified
+                    mesh.position.set(
+                        cmd.position.x ?? mesh.position.x,
+                        cmd.position.y ?? mesh.position.y,
+                        cmd.position.z ?? mesh.position.z
+                    );
+                }
+            } else if (cmd.action === 'rotate' && cmd.target.type === 'name') {
+                if (namedMeshMap.has(cmd.target.value)) {
+                    const targetData = namedMeshMap.get(cmd.target.value);
+                    const mesh = targetData.mesh;
+                    // Apply incremental rotation
+                    mesh.rotation.x += cmd.rotation.x || 0;
+                    mesh.rotation.y += cmd.rotation.y || 0;
+                    mesh.rotation.z += cmd.rotation.z || 0;
+                }
+            } else if (cmd.action === 'scale' && cmd.target.type === 'name') {
+                if (namedMeshMap.has(cmd.target.value)) {
+                    const targetData = namedMeshMap.get(cmd.target.value);
+                    targetData.mesh.scale.multiplyScalar(cmd.factor);
+                }
+            }
+            return; // Skip to the next command
+        }
+
+        // Handle creation commands
 
         const count = cmd.count || 1;
 

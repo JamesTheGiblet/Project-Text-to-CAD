@@ -165,6 +165,103 @@ export function extractName(text) {
 }
 
 /**
+ * Extracts a color change command for a named object.
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractColorChange(text) {
+    const colorChangeRegex = /change\s+(?:the\s+)?color\s+of\s+(?:the\s+)?object\s+named\s+["']([^"']+)["']\s+to\s+([a-z]+)/;
+    const match = text.match(colorChangeRegex);
+
+    if (match) {
+        const targetName = match[1];
+        const colorName = match[2];
+        return {
+            type: 'modify',
+            action: 'color',
+            target: { type: 'name', value: targetName },
+            colorName: colorName,
+        };
+    }
+    return null;
+}
+
+/**
+ * Extracts a move command for a named object.
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractMove(text) {
+    const moveRegex = /move\s+(?:the\s+)?object\s+named\s+["']([^"']+)["']\s+to/;
+    const match = text.match(moveRegex);
+
+    if (match) {
+        const targetName = match[1];
+        const position = extractPosition(text); // Reuse the position extractor
+        if (position) {
+            return {
+                type: 'modify',
+                action: 'move',
+                target: { type: 'name', value: targetName },
+                position: position,
+            };
+        }
+    }
+    return null;
+}
+
+/**
+ * Extracts a rotation change command for a named object.
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractRotationChange(text) {
+    // rotate the object named "my_box" by 45 degrees on the y axis
+    const rotRegex = /rotate\s+(?:the\s+)?object\s+named\s+["']([^"']+)["']\s+by\s+(-?\d+\.?\d*)\s*(?:deg|degrees)?\s+on\s+(?:the\s+)?(x|y|z)\s+axis/;
+    const match = text.match(rotRegex);
+
+    if (match) {
+        const targetName = match[1];
+        const angle = parseFloat(match[2]);
+        const axis = match[3];
+        
+        const rotation = {};
+        rotation[axis] = THREE.MathUtils.degToRad(angle);
+
+        return {
+            type: 'modify',
+            action: 'rotate',
+            target: { type: 'name', value: targetName },
+            rotation: rotation,
+        };
+    }
+    return null;
+}
+
+/**
+ * Extracts a scale command for a named object.
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractScaleChange(text) {
+    // scale the object named "my_box" by a factor of 1.5
+    const scaleRegex = /scale\s+(?:the\s+)?object\s+named\s+["']([^"']+)["']\s+by\s+(?:a\s+factor\s+of\s+)?(-?\d+\.?\d*)/;
+    const match = text.match(scaleRegex);
+
+    if (match) {
+        const targetName = match[1];
+        const factor = parseFloat(match[2]);
+        return {
+            type: 'modify',
+            action: 'scale',
+            target: { type: 'name', value: targetName },
+            factor: factor,
+        };
+    }
+    return null;
+}
+
+/**
  * Applies rotation to a mesh based on a command object.
  * @param {THREE.Mesh} mesh The mesh to rotate.
  * @param {object} cmd The command object.

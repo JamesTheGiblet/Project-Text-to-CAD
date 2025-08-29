@@ -1,35 +1,20 @@
 # Text to CAD Generator
 
-A web-based application that converts natural language descriptions into 3D CAD models. Simply describe what you want to create in plain English, and watch as your words transform into interactive 3D objects.
-This tool is the foundational design engine for the Iron Arm Exoskeleton project.
+A web-based application that converts natural language descriptions into 3D CAD models. Simply describe what you want to create, modify, and combine in plain English, and watch as your words transform into interactive 3D objects. This tool is the foundational design engine for the Iron Arm Exoskeleton project.
 
 🎯 Development Priority: Phase 0
 The Text to CAD Generator is the first and most critical phase of the Iron Arm development pipeline. The success of all subsequent mechanical and electronic phases depends on this tool.
 
-Project Ecosystem & Timeline
-
-The 8-week plan is structured as follows, with this tool enabling the entire workflow:
-
-* 📅 Weeks 1-2: Text to CAD Generator (THIS PROJECT)
-  * Output: Generates STL files for all mechanical parts.
-* 📅 Weeks 3-4: Iron Arm Phase 1* Mechanical Build
-  * Output: Validates physical design and ergonomics.
-* 📅 Week 5: Project PI Planner Development
-  * Output: Plans wiring and electronic layout.
-* 📅 Weeks 6-7: Iron Arm Phase 2* Electronics Integration
-  * Output: A fully functional exoskeleton prototype.
-
 🚀 Features
 
-* Natural Language Processing: Understands plain English descriptions of 3D objects.
-* Blueprint Confirmation: Generates a clear, human-readable "blueprint" of your design for approval before creating the final 3D model, ensuring accuracy.
-* Real-time 3D Visualization: Interactive Three.js-powered viewer.
-* Multiple Shape Support: Cubes, spheres, cylinders, cones, and torus shapes.
-* Color Recognition: Supports common color names (red, blue, green, etc.).
-* Dimension Parsing: Extracts measurements and proportions from text.
-* Interactive Controls: Mouse-based rotation, zooming, and panning.
-* STL Export: Export models for 3D printing.
-* Responsive Design: Modern UI with smooth animations.
+* **Advanced 3D Operations**: Full support for Constructive Solid Geometry (CSG) including `union`, `subtraction`, and `intersection`.
+* **Object Naming & Referencing**: Assign custom names to objects and refer to them in subsequent commands for precise modifications.
+* **Iterative Design Workflow**: Modify existing objects by changing their `color`, `position`, `rotation`, and `scale`.
+* **Intelligent Positioning**: Understands relational commands like `"on top of"`.
+* **Robust User Experience**: Features a persistent Undo/Redo stack, an interactive command history panel, and visual feedback (ghosting & loading indicators) for complex operations.
+* **Expanded Shape Library**: Now includes `pyramids` in addition to cubes, spheres, cylinders, cones, and tori.
+* **Real-time 3D Visualization**: Interactive Three.js-powered viewer with intuitive orbit controls.
+* **STL Export**: Export your final models for 3D printing or use in other CAD software.
 
 ⚡ Iron Arm Development Focus (Weeks 1-2)
 
@@ -37,34 +22,34 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 
 ## 1. Upper Arm Cuff Bracket (Week 1 Priority)
 
-Create upper arm cuff bracket:
+**Command:** `Create a gray box with width 12, height 4, depth 2.5 named "cuff". Then create a box with width 6, height 2, depth 0.8 named "flange" and move it to y 3. Then unite it with "cuff".`
 
 * Main body: gray box with width 12, height 4, depth 2.5
 * Servo attachment flange: rectangle with width 6, height 2, thickness 0.8
 * Padding channels: 2 grooves with width 1, depth 0.5 for foam
 * Velcro mounting tabs: 4 rectangles with width 2, height 1, thickness 0.3
 
-## 2. Elbow Joint Housing (Week 1 Priority)
+### 2. Elbow Joint Housing (Week 1 Priority)
 
-Make precision elbow joint housing:
+**Command:** `Create a black cylinder with radius 3.5 and height 2.8 named "housing". Then create a cylinder with radius 3.2, height 2.8 and cut it through "housing". Then create a cylinder with radius 2.8, height 2.8 and unite it with "housing".`
 
 * Main housing: black cylinder with radius 3.5 and height 2.8
-* Bearing races: 2 silver rings with outer radius 3.2, inner radius 2.8  
+* Bearing races: 2 silver rings with outer radius 3.2, inner radius 2.8
 * Cable routing channels: 4 grooves with width 0.8, depth 0.5
 * Mounting boss: cylinder with radius 1.5 and height 1.2
 
-## 3. Motor Mount Bracket (Week 1)
+### 3. Motor Mount Bracket (Week 1)
 
-Generate servo motor mounting system:
+**Command:** `Create a gray box with width 4.5, height 6, depth 1.2 named "base". Then create a box with width 2, height 4, depth 2.5 and cut it through "base".`
 
 * Base plate: gray rectangle with width 4.5, height 6, thickness 1.2
 * Motor cavity: rectangular cutout with width 2, height 4, depth 2.5
 * Screw bosses: 4 cylinders with radius 0.3 and height 0.8
 * Cable management clips: 2 hooks with radius 0.5
 
-## 4. Control Electronics Box (Week 2)
+### 4. Control Electronics Box (Week 2)
 
-Create control system enclosure:
+**Command:** `Create a blue box with width 8, height 5, depth 3 named "box". Then create a box with width 7.8, height 4.8, depth 3 and cut it through "box".`
 
 * Main body: blue box with width 8, height 5, depth 3
 * Lid: gray plate with width 8.2, height 5.2, thickness 0.5
@@ -72,117 +57,74 @@ Create control system enclosure:
 * LED windows: 3 cylinders with radius 0.3 and depth 0.2
 * Ventilation slots: 6 rectangles with width 3, height 0.3
 
-## 5. Cable Management System (Week 2)
+### 5. Cable Management System (Week 2)
 
-Design cable routing components:
+**Command:** `Create a gray cylinder with radius 1, height 2 named "guide". Then create a cylinder with radius 0.7, height 2 and cut it through "guide".`
 
 * Cable guide: gray cylinder with radius 1, height 2, wall thickness 0.3
-* Strain relief: cone with base radius 1.2, tip radius 0.4, height 1.5  
+* Strain relief: cone with base radius 1.2, tip radius 0.4, height 1.5
 * Mounting clips: 3 C-shaped brackets with width 1.5, height 1
-
-## Week 1-2 Development Goals
-
-* Day 1-3: Develop the parser and blueprint generator. The core task is to convert natural language commands into a structured JSON blueprint.
-* Day 4-7: Design and iterate on the cuff bracket by generating and refining its blueprint.
-* Day 8-10: Create blueprints for the elbow housing and motor mount.
-* Day 11-14: Generate blueprints for the control box and cable management system.
-* End of Week 2: All component blueprints are finalized and their STL files are ready for Phase 1 printing.
-
-## Success Criteria for Phase 0
-
-* ✅ Text-to-CAD generates accurate blueprints from complex commands.
-* ✅ Blueprints produce usable STL files for all 5 components.
-* ✅ Export functionality works reliably for complex, multi-part objects.
-* ✅ Ready to begin 3D printing immediately in Week 3.
 
 🎯 Quick Start
 
-## Prerequisites
-
-* A modern web browser with WebGL support.
-* Basic understanding of 3D modeling concepts.
-* (Optional) A 3D printer for physical prototyping.
-Basic Usage
-* Open the HTML file in a modern web browser.
-* Type a description in the text input area.
-* Click "Generate Blueprint".
-* Review the displayed technical blueprint to confirm the tool understood your intent.
-* Click "Create 3D Model".
-* Use mouse controls to explore your creation:
-  * Left click + drag: Rotate view
-  * Mouse wheel: Zoom in/out
-  * Right click + drag: Pan camera
-* Export your model as STL for 3D printing.
+1. **Open `main.html`** in a modern web browser.
+2. **Describe your model** in the text area. Use multiple sentences for sequential operations.
+3. **Click "Generate 3D Model"**.
+4. **Interact** with the model using your mouse (Left-click: Rotate, Right-click: Pan, Wheel: Zoom).
+5. **Iterate** by modifying your text, using the interactive history panel, or using Undo/Redo.
+6. **Export** your final model as an STL file for 3D printing.
 
 ## 🔬 Technical Architecture
 
-Core Components
-
-* Natural Language Parser: Interprets user input to identify design intent, shapes, and parameters.
-* Blueprint Generator: Translates the parsed intent into a structured, intermediate representation (JSON format).
-* 3D Engine (Three.js): Reads the final blueprint to perform geometric operations (unions, subtractions) and render the final model.
-* Export System: Generates an STL file from the final 3D geometry.
-Dependencies
-* Three.js (r128): 3D graphics and rendering.
-* Three-CSG-TS (or similar): For handling Boolean (union, subtract) operations on meshes.
-* Modern Browser: ES6+ JavaScript support required.
+* **Natural Language Parser**: A modular system of regular expressions in `transforms.js` and `shapes.js` that interprets user input to identify shapes, operations, and parameters.
+* **3D Engine (Three.js)**: Renders the 3D scene and handles geometric objects.
+* **CSG Library (THREE.CSGMesh.js)**: Performs boolean operations (union, subtract, intersect) on meshes.
+* **State Management (`history.js`)**: Manages the undo/redo stacks and persists the session to `localStorage`.
 
 ## 📝 Supported Commands
 
-Basic Shapes
+### Creation Commands
 
 | Shape | Example Command |
 |---|---|
-| Cube/Box | Create a blue cube with width 2, height 1.5, and depth 1 |
-| Sphere | Make a red sphere with radius 1.5 |
-| Cylinder | Create a green cylinder with radius 0.8 and height 3 |
-| Torus | Make a yellow torus with inner radius 0.5 and outer radius 1.2 |
-| Cone | Create a purple cone with base radius 1 and height 2.5 |
+| Cube/Box | `Create a blue cube with width 2, height 1.5, and depth 1` |
+| Sphere | `Make a red sphere with radius 1.5` |
+| Cylinder | `Create a green cylinder with radius 0.8 and height 3` |
+| Torus | `Make a yellow torus with inner radius 0.5 and outer radius 1.2` |
+| Cone | `Create a purple cone with base radius 1 and height 2.5` |
+| Pyramid | `Create a pyramid with base radius 2 and height 3` |
 
-Dimension Keywords
+### Modification Commands
 
-* Cubes: width, height, depth, size
-* Spheres: radius
-* Cylinders: radius, height
-* Torus: radius, inner radius, outer radius
-* Cones: radius, base radius, height
-Color Support
-* Supported colors: red, blue, green, yellow, purple, orange, pink, cyan, white, black, gray/grey.
-🔧 Integration with Development Workflow
-With Iron Arm Exoskeleton
-This tool is the primary design interface for all mechanical components of the Iron Arm. The workflow is simple: design a part in Text-to-CAD, export the STL, and send it directly to a 3D printer.
-With Project PI Planner
-* Use PI Planner to allocate GPIO pins and map out sensor locations.
-* Note the physical dimensions of the required sensor modules.
-* Use Text-to-CAD to design custom mounting brackets and enclosures to the exact specifications.
+| Command | Example |
+|---|---|
+| Naming | `Create a cube named "my_box"` |
+| Move | `Move the object named "my_box" to x 5` |
+| Rotate | `Rotate the object named "my_box" by 45 degrees on the y axis` |
+| Scale | `Scale the object named "my_box" by 2` |
+| Color | `Change the color of the object named "my_box" to green` |
 
-## Example: Design a mount for an HC-SR04 sensor
+### CSG & Relational Commands
 
-Create a sensor mount for HC-SR04 ultrasonic sensor:
-
-* Base plate: gray rectangle with width 4.5, height 2, thickness 0.8
-* Sensor slots: subtract two cylinders with radius 0.8 and depth 1.2
-* Mounting holes: subtract cylinders with diameter 0.3 at corners
+| Command | Example |
+|---|---|
+| Union | `... and unite it with the cube` |
+| Subtraction | `... and cut it through the cube` |
+| Intersection | `... and intersect it with the sphere` |
+| Relational | `... and put it on top of the cylinder` |
 
 ## 📋 Limitations
 
-* Boolean Operations: The core challenge is implementing robust CSG operations (union, difference, intersection).
-* Positioning: The parser will need advanced logic to understand relative positioning ("on top of", "next to", "centered on").
-* Complex Curves: No support for bezier curves, splines, or custom profiles.
-* Assembly: No concept of hierarchical object relationships or assembly constraints.
+* **Complex Positioning**: While `"on top of"` is supported, more complex relations like `"next to"` or `"centered on"` are not yet implemented.
+* **Direct Mesh Editing**: No support for sub-object manipulation like extruding a specific face, or creating fillets and chamfers.
+* **Assembly Constraints**: No concept of hierarchical object relationships or assembly constraints between separate objects.
 
 ## 🔮 Future Enhancements
 
-### Planned for Iron Arm v2.0 Integration
-
-* Parametric Features: Link variables in blueprints to sensor dimensions.
-* Assembly Constraints: Develop a system for automatic mating of components.
-* Material Properties: Simple strength analysis for load-bearing parts.
-* Mechanical Features: Add library support for threads, fillets, and chamfers.
-Technical Roadmap
-* Advanced Positioning: "Place X next to Y", "Stack A on top of B".
-* AI Integration: Use a GPT/Claude API for more flexible natural language understanding.
-* Export Formats: Add support for STEP, OBJ, and GLTF.
+* **Advanced Positioning**: Implement more relational keywords like `"next to"`, `"inside"`, and `"aligned with"`.
+* **Material Properties**: Add support for changing material properties like `metallic`, `roughness`, and `opacity`.
+* **Enhanced Export**: Improve the STL export to be more robust and add support for other formats like OBJ or GLTF.
+* **AI Integration**: Use a Large Language Model (LLM) API for more flexible and powerful natural language understanding, moving beyond simple regex.
 
 ## 🤝 Contributing
 
@@ -191,10 +133,12 @@ We welcome contributions, especially those that enhance exoskeleton development:
 * Biomechanical part templates
 * Actuator mounting patterns
 * Sensor integration helpers
+
 📞 Support & Community
-* Issues: Use GitHub Issues for bugs and feature requests.
-* Discussions: Join the maker community Discord.
-* Related Resources: Cross-reference with the PI Planner and Iron Arm assembly guides.
+
+* **Issues**: Use GitHub Issues for bugs and feature requests.
+* **Discussions**: Join the maker community Discord.
+* **Related Resources**: Cross-reference with the PI Planner and Iron Arm assembly guides.
 
 Part of the Iron Arm Exoskeleton Project Suite* Democratizing robotics development through intuitive tools.
 
