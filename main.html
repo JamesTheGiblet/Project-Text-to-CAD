@@ -7,6 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.rawgit.com/chandlerprall/THREE.CSGMesh/v1.0.0/THREE.CSGMesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -134,7 +136,8 @@
                 <button id="undo-btn" class="control-btn" disabled>Undo</button>
                 <button id="redo-btn" class="control-btn" disabled>Redo</button>
                 <button id="reset-view-btn" class="control-btn">Reset View</button>
-                <button id="export-btn" class="control-btn">Export STL</button>
+                <button id="export-stl-btn" class="control-btn">Export STL</button>
+                <button id="export-obj-btn" class="control-btn">Export OBJ</button>
             </div>
             <div class="info">
                 L-Click: Rotate | R-Click: Pan | Wheel: Zoom

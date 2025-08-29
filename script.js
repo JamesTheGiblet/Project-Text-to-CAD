@@ -103,7 +103,8 @@ function setupEventListeners() {
     document.getElementById('undo-btn').addEventListener('click', undoLastCommand);
     document.getElementById('redo-btn').addEventListener('click', redoLastCommand);
     document.getElementById('reset-view-btn').addEventListener('click', resetView);
-    document.getElementById('export-btn').addEventListener('click', exportModel);
+    document.getElementById('export-stl-btn').addEventListener('click', exportSTL);
+    document.getElementById('export-obj-btn').addEventListener('click', exportOBJ);
 
     document.querySelectorAll('.example').forEach(exampleEl => {
         exampleEl.addEventListener('click', () => {
@@ -623,120 +624,48 @@ function updateUndoRedoStates() {
     document.getElementById('redo-btn').disabled = !historyManager.canRedo();
 }
 
-function exportModel() {
+function exportSTL() {
 
-    if (currentObjects.length === 0) {
-
+    const objectsToExport = currentObjects.filter(obj => obj.isMesh);
+    if (objectsToExport.length === 0) {
         alert('No objects to export! Please generate a model first.');
-
         return;
-
     }
 
-    
+    const exporter = new THREE.STLExporter();
 
-    // Simple STL export (basic implementation)
+    // The exporter can parse the entire scene and will correctly handle meshes.
+    // This is more robust than iterating through our `currentObjects` array.
+    const result = exporter.parse(scene);
 
-    let stlString = 'solid model\n';
-
-    
-
-    currentObjects.forEach(obj => {
-
-        const geometry = obj.geometry;
-
-        const position = geometry.attributes.position;
-
-        const matrix = obj.matrixWorld;
-
-        
-
-        for (let i = 0; i < position.count; i += 3) {
-
-            const v1 = new THREE.Vector3(
-
-                position.getX(i),
-
-                position.getY(i),
-
-                position.getZ(i)
-
-            ).applyMatrix4(matrix);
-
-            
-
-            const v2 = new THREE.Vector3(
-
-                position.getX(i + 1),
-
-                position.getY(i + 1),
-
-                position.getZ(i + 1)
-
-            ).applyMatrix4(matrix);
-
-            
-
-            const v3 = new THREE.Vector3(
-
-                position.getX(i + 2),
-
-                position.getY(i + 2),
-
-                position.getZ(i + 2)
-
-            ).applyMatrix4(matrix);
-
-            
-
-            const normal = new THREE.Vector3()
-
-                .subVectors(v2, v1)
-
-                .cross(new THREE.Vector3().subVectors(v3, v1))
-
-                .normalize();
-
-            
-
-            stlString += `  facet normal ${normal.x} ${normal.y} ${normal.z}\n`;
-
-            stlString += '    outer loop\n';
-
-            stlString += `      vertex ${v1.x} ${v1.y} ${v1.z}\n`;
-
-            stlString += `      vertex ${v2.x} ${v2.y} ${v2.z}\n`;
-
-            stlString += `      vertex ${v3.x} ${v3.y} ${v3.z}\n`;
-
-            stlString += '    endloop\n';
-
-            stlString += '  endfacet\n';
-
-        }
-
-    });
-
-    
-
-    stlString += 'endsolid model\n';
-
-    
-
-    const blob = new Blob([stlString], { type: 'text/plain' });
-
+    const blob = new Blob([result], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
-
     a.href = url;
-
     a.download = 'model.stl';
-
     a.click();
-
     URL.revokeObjectURL(url);
+}
 
+function exportOBJ() {
+    const objectsToExport = currentObjects.filter(obj => obj.isMesh);
+    if (objectsToExport.length === 0) {
+        alert('No objects to export! Please generate a model first.');
+        return;
+    }
+
+    const exporter = new THREE.OBJExporter();
+
+    // The exporter can parse the entire scene and will correctly handle meshes.
+    const result = exporter.parse(scene);
+
+    const blob = new Blob([result], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'model.obj';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 
