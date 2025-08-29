@@ -1,5 +1,6 @@
 import { SHAPES, SHAPE_NAMES_REGEX_PART } from './shapes.js';
 import * as Transforms from './transforms.js';
+import { historyManager } from './history.js';
 
 let scene, camera, renderer, controls; // controls will now be OrbitControls
 
@@ -75,6 +76,12 @@ function initScene() {
     // Setup UI event listeners
     setupEventListeners();
 
+    // Restore state from history
+    const lastState = historyManager.getCurrentState();
+    document.getElementById('textInput').value = lastState;
+    _generateSceneFromText(lastState);
+    updateUndoRedoStates();
+
     
 
     // Handle resize
@@ -93,6 +100,8 @@ function initScene() {
 
 function setupEventListeners() {
     document.getElementById('generate-btn').addEventListener('click', generateCAD);
+    document.getElementById('undo-btn').addEventListener('click', undoLastCommand);
+    document.getElementById('redo-btn').addEventListener('click', redoLastCommand);
     document.getElementById('reset-view-btn').addEventListener('click', resetView);
     document.getElementById('export-btn').addEventListener('click', exportModel);
 
@@ -177,6 +186,7 @@ function parseText(text) {
                     position: null,
                     rotation: null,
                     relative: null,
+                    name: null,
                     subtract: null,
                     union: null,
                     intersection: null
@@ -186,6 +196,8 @@ function parseText(text) {
                 shapeConfig.parseParams(sentence, cmd);
 
                 // Parse common attributes applicable to all shapes
+                cmd.name = Transforms.extractName(sentence);
+                cmd.name = Transforms.extractName(sentence);
                 cmd.position = Transforms.extractPosition(sentence);
                 cmd.rotation = Transforms.extractRotation(sentence);
                 cmd.relative = Transforms.extractRelationship(sentence);
@@ -294,17 +306,14 @@ function extractColor(text) {
 function generateCAD() {
 
     const text = document.getElementById('textInput').value;
-    
-    // Update the history panel with the new commands first.
+    historyManager.push(text);
+    _generateSceneFromText(text);
+    updateUndoRedoStates();
+}
+
+function _generateSceneFromText(text) {
     updateHistory(text);
 
-    // If the input is empty, just clear the scene and stop.
-    if (!text.trim()) {
-        currentObjects.forEach(obj => scene.remove(obj));
-        currentObjects = [];
-        return;
-    }
-    
     // Clear existing objects
 
     currentObjects.forEach(obj => scene.remove(obj));
@@ -312,11 +321,18 @@ function generateCAD() {
     currentObjects = [];
 
     
+    // If the input is empty, just clear the scene and stop.
+    if (!text.trim()) {
+        return;
+    }
+
 
     const commands = parseText(text);
 
     // A map to store generated meshes by their command index
     const meshMap = new Map();
+    const namedMeshMap = new Map();
+    
     
 
     commands.forEach((cmd, index) => {
@@ -363,18 +379,26 @@ function generateCAD() {
 
             // Check for any CSG operation
             const csgOperation = cmd.subtract ? 'subtract' : (cmd.union ? 'union' : (cmd.intersection ? 'intersection' : null));
-            const csgTargetShape = cmd.subtract?.targetShape || cmd.union?.targetShape || cmd.intersection?.targetShape;
+            const csgTargetInfo = cmd.subtract || cmd.union || cmd.intersection;
 
             if (csgOperation) {
                 let targetMesh = null;
                 let targetCmdIndex = -1;
 
                 // Find the target mesh to operate on
-                for (let j = index - 1; j >= 0; j--) {
-                    if (commands[j].type === csgTargetShape && meshMap.has(j)) {
-                        targetMesh = meshMap.get(j)[0];
-                        targetCmdIndex = j;
-                        break;
+                if (csgTargetInfo.target.type === 'name') {
+                    if (namedMeshMap.has(csgTargetInfo.target.value)) {
+                        const targetData = namedMeshMap.get(csgTargetInfo.target.value);
+                        targetMesh = targetData.mesh;
+                        targetCmdIndex = targetData.index;
+                    }
+                } else { // type is 'shape'
+                    for (let j = index - 1; j >= 0; j--) {
+                        if (commands[j].type === csgTargetInfo.target.value && meshMap.has(j)) {
+                            targetMesh = meshMap.get(j)[0];
+                            targetCmdIndex = j;
+                            break;
+                        }
                     }
                 }
 
@@ -389,7 +413,11 @@ function generateCAD() {
                     mesh.material = ghostMaterial;
                     scene.add(mesh);
 
-                    // Perform the CSG operation after a short delay
+                    // Show loading indicator
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.style.display = 'flex';
+
+                    // Perform the CSG operation after a short delay to allow UI to update
                     setTimeout(() => {
                         let resultMesh;
                         if (csgOperation === 'subtract') {
@@ -400,6 +428,7 @@ function generateCAD() {
                             resultMesh = Transforms.performIntersection(mesh, targetMesh);
                         }
 
+                        resultMesh.name = targetMesh.name; // Inherit name
                         // Replace the old mesh with the new one in the scene and trackers
                         scene.remove(targetMesh);
                         scene.remove(mesh); // Remove the ghost tool
@@ -413,7 +442,13 @@ function generateCAD() {
 
                         // Update meshMap
                         meshMap.set(targetCmdIndex, [resultMesh]);
-                    }, 750); // 750ms delay for visualization
+                        if (resultMesh.name) {
+                            namedMeshMap.set(resultMesh.name, { mesh: resultMesh, index: targetCmdIndex });
+                        }
+
+                        // Hide loading indicator
+                        loadingIndicator.style.display = 'none';
+                    }, 50); // A short delay allows the browser to render the loader before blocking
 
                 } else {
                     // If target not found, just add the "tool" shape as a normal object
@@ -430,6 +465,11 @@ function generateCAD() {
         // Store the created meshes for this command so future commands can refer to them
         if (createdMeshes.length > 0) {
             meshMap.set(index, createdMeshes);
+            if (cmd.name) {
+                const namedMesh = createdMeshes[0];
+                namedMesh.name = cmd.name;
+                namedMeshMap.set(cmd.name, { mesh: namedMesh, index: index });
+            }
             currentObjects.push(...createdMeshes);
         }
     });
@@ -503,7 +543,28 @@ function resetView() {
     controls.reset();
 }
 
+function undoLastCommand() {
+    const previousText = historyManager.undo();
+    if (previousText !== null) {
+        document.getElementById('textInput').value = previousText;
+        _generateSceneFromText(previousText);
+        updateUndoRedoStates();
+    }
+}
 
+function redoLastCommand() {
+    const nextState = historyManager.redo();
+    if (nextState !== null) {
+        document.getElementById('textInput').value = nextState;
+        _generateSceneFromText(nextState);
+        updateUndoRedoStates();
+    }
+}
+
+function updateUndoRedoStates() {
+    document.getElementById('undo-btn').disabled = !historyManager.canUndo();
+    document.getElementById('redo-btn').disabled = !historyManager.canRedo();
+}
 
 function exportModel() {
 

@@ -40,19 +40,28 @@ export function extractRotation(text) {
  * @returns {object|null} An object with relationship and target shape, or null.
  */
 export function extractRelationship(text) {
-    const relRegex = new RegExp(`(on\\s+top\\s+of)\\s+(?:a|an|the)\\s+(${SHAPE_NAMES_REGEX_PART})`, 'g');
-    const match = relRegex.exec(text);
+    const relRegex = new RegExp(`(on\\s+top\\s+of)\\s+(?:a|an|the)\\s+(?:object\\s+named\\s+["']([^"']+)["']|(${SHAPE_NAMES_REGEX_PART}))`);
+    const match = text.match(relRegex);
 
     if (match) {
         const relationship = match[1].replace(/\s+/g, '-');
-        let targetShape = match[2];
-        for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
-            if (shapeConfig.aliases.includes(targetShape)) {
-                targetShape = shapeName;
-                break;
-            }
+        const targetName = match[2];
+        let targetShape = match[3];
+
+        if (targetName) {
+            return { relationship, target: { type: 'name', value: targetName } };
         }
-        return { relationship, targetShape };
+
+        if (targetShape) {
+            // Normalize alias
+            for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
+                if (shapeConfig.aliases.includes(targetShape)) {
+                    targetShape = shapeName;
+                    break;
+                }
+            }
+            return { relationship, target: { type: 'shape', value: targetShape } };
+        }
     }
     return null;
 }
@@ -63,18 +72,25 @@ export function extractRelationship(text) {
  * @returns {object|null} An object with the target shape for subtraction, or null.
  */
 export function extractSubtraction(text) {
-    const subRegex = new RegExp(`cut\\s+it\\s+through\\s+(?:a|an|the)\\s+(${SHAPE_NAMES_REGEX_PART})`, 'g');
-    const match = subRegex.exec(text);
+    const subRegex = new RegExp(`cut\\s+it\\s+through\\s+(?:a|an|the)\\s+(?:object\\s+named\\s+["']([^"']+)["']|(${SHAPE_NAMES_REGEX_PART}))`);
+    const match = text.match(subRegex);
 
     if (match) {
-        let targetShape = match[1];
-        for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
-            if (shapeConfig.aliases.includes(targetShape)) {
-                targetShape = shapeName;
-                break;
-            }
+        const targetName = match[1];
+        let targetShape = match[2];
+
+        if (targetName) {
+            return { target: { type: 'name', value: targetName } };
         }
-        return { targetShape };
+        if (targetShape) {
+            for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
+                if (shapeConfig.aliases.includes(targetShape)) {
+                    targetShape = shapeName;
+                    break;
+                }
+            }
+            return { target: { type: 'shape', value: targetShape } };
+        }
     }
     return null;
 }
@@ -85,19 +101,25 @@ export function extractSubtraction(text) {
  * @returns {object|null} An object with the target shape for union, or null.
  */
 export function extractUnion(text) {
-    const unionRegex = new RegExp(`(?:unite|combine|add)\\s+it\\s+(?:with|to)\\s+(?:a|an|the)\\s+(${SHAPE_NAMES_REGEX_PART})`, 'g');
-    const match = unionRegex.exec(text);
+    const unionRegex = new RegExp(`(?:unite|combine|add)\\s+it\\s+(?:with|to)\\s+(?:a|an|the)\\s+(?:object\\s+named\\s+["']([^"']+)["']|(${SHAPE_NAMES_REGEX_PART}))`);
+    const match = text.match(unionRegex);
 
     if (match) {
-        let targetShape = match[1];
-        // Normalize alias
-        for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
-            if (shapeConfig.aliases.includes(targetShape)) {
-                targetShape = shapeName;
-                break;
-            }
+        const targetName = match[1];
+        let targetShape = match[2];
+
+        if (targetName) {
+            return { target: { type: 'name', value: targetName } };
         }
-        return { targetShape };
+        if (targetShape) {
+            for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
+                if (shapeConfig.aliases.includes(targetShape)) {
+                    targetShape = shapeName;
+                    break;
+                }
+            }
+            return { target: { type: 'shape', value: targetShape } };
+        }
     }
     return null;
 }
@@ -108,21 +130,38 @@ export function extractUnion(text) {
  * @returns {object|null} An object with the target shape for intersection, or null.
  */
 export function extractIntersection(text) {
-    const intersectRegex = new RegExp(`intersect\\s+it\\s+with\\s+(?:a|an|the)\\s+(${SHAPE_NAMES_REGEX_PART})`, 'g');
-    const match = intersectRegex.exec(text);
+    const intersectRegex = new RegExp(`intersect\\s+it\\s+with\\s+(?:a|an|the)\\s+(?:object\\s+named\\s+["']([^"']+)["']|(${SHAPE_NAMES_REGEX_PART}))`);
+    const match = text.match(intersectRegex);
 
     if (match) {
-        let targetShape = match[1];
-        // Normalize alias
-        for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
-            if (shapeConfig.aliases.includes(targetShape)) {
-                targetShape = shapeName;
-                break;
-            }
+        const targetName = match[1];
+        let targetShape = match[2];
+
+        if (targetName) {
+            return { target: { type: 'name', value: targetName } };
         }
-        return { targetShape };
+        if (targetShape) {
+            for (const [shapeName, shapeConfig] of Object.entries(SHAPES)) {
+                if (shapeConfig.aliases.includes(targetShape)) {
+                    targetShape = shapeName;
+                    break;
+                }
+            }
+            return { target: { type: 'shape', value: targetShape } };
+        }
     }
     return null;
+}
+
+/**
+ * Extracts a name for an object from the text.
+ * @param {string} text The text to parse.
+ * @returns {string|null} The extracted name or null.
+ */
+export function extractName(text) {
+    const nameRegex = /(?:named|called)\s+["']([^"']+)["']/;
+    const match = text.match(nameRegex);
+    return match ? match[1] : null;
 }
 
 /**
