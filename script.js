@@ -4,6 +4,9 @@ import { historyManager } from './history.js';
 
 let scene, camera, renderer, controls;
 let currentObjects = [];
+let selectedObject = null;
+let selectionHighlight = null;
+let namedMeshMap = new Map();
 
 // Initialize Three.js scene
 async function initScene() {
@@ -24,6 +27,7 @@ async function initScene() {
         console.log('DEBUG: Renderer created.');
 
         const viewer = document.querySelector('.viewer');
+        viewer.addEventListener('click', onCanvasClick);
         viewer.appendChild(renderer.domElement);
 
         // Add lighting
@@ -48,6 +52,7 @@ async function initScene() {
         // Restore state from history
         const lastState = historyManager.getCurrentState();
         document.getElementById('textInput').value = lastState;
+        renderSavedSessions();
         await _generateSceneFromText(lastState);
         updateUndoRedoStates();
 
@@ -67,8 +72,11 @@ function setupEventListeners() {
     document.getElementById('undo-btn').addEventListener('click', undoLastCommand);
     document.getElementById('redo-btn').addEventListener('click', redoLastCommand);
     document.getElementById('reset-view-btn').addEventListener('click', resetView);
+    document.getElementById('clear-scene-btn').addEventListener('click', clearScene);
     document.getElementById('export-stl-btn').addEventListener('click', exportSTL);
+    document.getElementById('save-session-btn').addEventListener('click', saveCurrentSession);
     document.getElementById('export-obj-btn').addEventListener('click', exportOBJ);
+    document.getElementById('export-gltf-btn').addEventListener('click', exportGLTF);
 
     document.querySelectorAll('.example').forEach(exampleEl => {
         exampleEl.addEventListener('click', () => {
@@ -77,6 +85,11 @@ function setupEventListeners() {
             loadExample(exampleText); // This will now trigger generation
         });
     });
+
+    // Add listeners for the new properties panel
+    setupPropertiesPanelListeners();
+    document.getElementById('duplicate-btn').addEventListener('click', duplicateSelectedObject);
+
     console.log('DEBUG: Event listeners set up.');
 }
 
@@ -110,11 +123,143 @@ let frameCount = 0;
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
+
+    if (selectionHighlight && selectedObject) {
+        selectionHighlight.position.copy(selectedObject.position);
+        selectionHighlight.rotation.copy(selectedObject.rotation);
+        selectionHighlight.scale.copy(selectedObject.scale);
+    }
     renderer.render(scene, camera);
     if (frameCount < 5) { // Log first 5 frames to confirm render loop is active
         console.log('DEBUG: Animate loop running...');
         frameCount++;
     }
+}
+
+function onCanvasClick(event) {
+    // Don't select if the user is dragging the camera
+    if (controls.dragging) return;
+
+    const viewer = document.querySelector('.viewer');
+    const rect = viewer.getBoundingClientRect();
+
+    const mouse = new THREE.Vector2();
+    mouse.x = ((event.clientX - rect.left) / viewer.clientWidth) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / viewer.clientHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(currentObjects);
+
+    if (intersects.length > 0) {
+        // An object was clicked
+        const newSelection = intersects[0].object;
+        if (newSelection !== selectedObject) {
+            selectObject(newSelection);
+        }
+    } else {
+        // Nothing was clicked, deselect
+        selectObject(null);
+    }
+}
+
+function selectObject(object) {
+    selectedObject = object;
+    updateHighlight();
+    updatePropertiesPanel();
+}
+
+function updateHighlight() {
+    if (selectionHighlight) {
+        scene.remove(selectionHighlight);
+        selectionHighlight = null;
+    }
+
+    if (selectedObject) {
+        const edges = new THREE.EdgesGeometry(selectedObject.geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 3 });
+        selectionHighlight = new THREE.LineSegments(edges, lineMaterial);
+        scene.add(selectionHighlight);
+        // The highlight will be updated with the object's transform in the animate loop
+    }
+}
+
+function updatePropertiesPanel() {
+    const panel = document.getElementById('properties-panel');
+    if (!selectedObject) {
+        panel.classList.add('hidden');
+        return;
+    }
+
+    panel.classList.remove('hidden');
+
+    // Populate fields
+    document.getElementById('prop-name').textContent = selectedObject.name || 'Unnamed Object';
+    
+    document.getElementById('prop-pos-x').value = selectedObject.position.x.toFixed(2);
+    document.getElementById('prop-pos-y').value = selectedObject.position.y.toFixed(2);
+    document.getElementById('prop-pos-z').value = selectedObject.position.z.toFixed(2);
+
+    document.getElementById('prop-rot-x').value = THREE.MathUtils.radToDeg(selectedObject.rotation.x).toFixed(1);
+    document.getElementById('prop-rot-y').value = THREE.MathUtils.radToDeg(selectedObject.rotation.y).toFixed(1);
+    document.getElementById('prop-rot-z').value = THREE.MathUtils.radToDeg(selectedObject.rotation.z).toFixed(1);
+
+    document.getElementById('prop-scale-x').value = selectedObject.scale.x.toFixed(2);
+    document.getElementById('prop-scale-y').value = selectedObject.scale.y.toFixed(2);
+    document.getElementById('prop-scale-z').value = selectedObject.scale.z.toFixed(2);
+}
+
+function setupPropertiesPanelListeners() {
+    const inputs = {
+        'prop-pos-x': (val) => { selectedObject.position.x = val; },
+        'prop-pos-y': (val) => { selectedObject.position.y = val; },
+        'prop-pos-z': (val) => { selectedObject.position.z = val; },
+        'prop-rot-x': (val) => { selectedObject.rotation.x = THREE.MathUtils.degToRad(val); },
+        'prop-rot-y': (val) => { selectedObject.rotation.y = THREE.MathUtils.degToRad(val); },
+        'prop-rot-z': (val) => { selectedObject.rotation.z = THREE.MathUtils.degToRad(val); },
+        'prop-scale-x': (val) => { selectedObject.scale.x = val; },
+        'prop-scale-y': (val) => { selectedObject.scale.y = val; },
+        'prop-scale-z': (val) => { selectedObject.scale.z = val; },
+    };
+
+    for (const [id, updater] of Object.entries(inputs)) {
+        const inputElement = document.getElementById(id);
+        inputElement.addEventListener('input', (e) => {
+            if (selectedObject) {
+                updater(parseFloat(e.target.value));
+            }
+        });
+    }
+}
+
+function duplicateSelectedObject() {
+    if (!selectedObject) {
+        console.log('DEBUG: Duplicate clicked, but no object selected.');
+        return;
+    }
+    console.log(`DEBUG: Duplicating object: ${selectedObject.name || 'Unnamed Object'}`);
+
+    // clone() creates a new mesh sharing the same geometry and material.
+    // This is efficient and sufficient for transform-based modifications.
+    const newMesh = selectedObject.clone();
+
+    // Create a unique name for the duplicate
+    let baseName = selectedObject.name ? selectedObject.name.replace(/_copy(_\d+)?$/, '') : 'Unnamed';
+    let newName = `${baseName}_copy`;
+    let counter = 1;
+    while (namedMeshMap.has(newName)) {
+        counter++;
+        newName = `${baseName}_copy_${counter}`;
+    }
+    newMesh.name = newName;
+
+    // Offset the new object slightly so it's visible
+    newMesh.position.x += 1;
+
+    // Add to scene and trackers, then select it
+    addMeshToScene(newMesh, -1); // -1 index signifies it wasn't from a text command
+    selectObject(newMesh);
 }
 
 // Text parsing and CAD generation
@@ -218,6 +363,63 @@ function updateHistory(fullText) {
     });
 }
 
+function renderSavedSessions() {
+    const savedList = document.getElementById('saved-sessions-list');
+    savedList.innerHTML = ''; // Clear existing list
+
+    const sessions = historyManager.getSavedSessions();
+    const sessionNames = Object.keys(sessions).sort();
+
+    if (sessionNames.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'No saved sessions.';
+        li.classList.add('history-empty');
+        savedList.appendChild(li);
+        return;
+    }
+
+    sessionNames.forEach(name => {
+        const li = document.createElement('li');
+        li.classList.add('session-item');
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = name;
+        nameSpan.classList.add('session-item-name');
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.classList.add('session-item-buttons');
+
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load';
+        loadBtn.classList.add('control-btn-small');
+        loadBtn.addEventListener('click', async () => {
+            console.log(`DEBUG: Loading session: "${name}"`);
+            const content = sessions[name];
+            if (content !== null) {
+                document.getElementById('textInput').value = content;
+                await generateCAD();
+            }
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.classList.add('control-btn-small', 'delete');
+        deleteBtn.addEventListener('click', () => {
+            if (confirm(`Are you sure you want to delete the session "${name}"?`)) {
+                console.log(`DEBUG: Deleting session: "${name}"`);
+                historyManager.deleteSession(name);
+                renderSavedSessions(); // Re-render the list
+            }
+        });
+
+        buttonsDiv.appendChild(loadBtn);
+        buttonsDiv.appendChild(deleteBtn);
+        li.appendChild(nameSpan);
+        li.appendChild(buttonsDiv);
+        savedList.appendChild(li);
+    });
+}
+
 function extractColor(text) {
     const colors = {
         'red': 0xff0000,
@@ -255,6 +457,7 @@ async function _generateSceneFromText(text) {
     // Clear existing objects
     currentObjects.forEach(obj => scene.remove(obj));
     currentObjects = [];
+    selectObject(null); // Deselect any object when regenerating
     
     if (!text.trim()) {
         console.log('DEBUG: Text is empty, clearing scene and resetting view.');
@@ -265,7 +468,7 @@ async function _generateSceneFromText(text) {
     const commands = parseText(text);
     console.log(`DEBUG: Parsed ${commands.length} commands.`);
     const meshMap = new Map();
-    const namedMeshMap = new Map();
+    namedMeshMap.clear();
     
     for (const [index, cmd] of commands.entries()) {
         // Handle modification commands
@@ -425,9 +628,7 @@ async function _generateSceneFromText(text) {
         if (createdMeshes.length > 0) {
             meshMap.set(index, createdMeshes);
             if (cmd.name) {
-                const namedMesh = createdMeshes[0];
-                namedMesh.name = cmd.name;
-                namedMeshMap.set(cmd.name, { mesh: namedMesh, index: index });
+                addNamedMesh(createdMeshes[0], cmd.name, index);
             }
             currentObjects.push(...createdMeshes);
         }
@@ -437,6 +638,19 @@ async function _generateSceneFromText(text) {
     if (currentObjects.length > 0) {
         fitCameraToObjects();
     }
+}
+
+function addMeshToScene(mesh, commandIndex) {
+    scene.add(mesh);
+    currentObjects.push(mesh);
+    if (mesh.name) {
+        addNamedMesh(mesh, mesh.name, commandIndex);
+    }
+}
+
+function addNamedMesh(mesh, name, commandIndex) {
+    mesh.name = name;
+    namedMeshMap.set(name, { mesh: mesh, index: commandIndex });
 }
 
 function fitCameraToObjects() {
@@ -473,6 +687,28 @@ async function loadExample(text) {
 function resetView() {
     console.log('DEBUG: Resetting view.');
     controls.reset();
+}
+
+async function clearScene() {
+    console.log('DEBUG: Clear Scene clicked.');
+    document.getElementById('textInput').value = '';
+    await generateCAD();
+}
+
+function saveCurrentSession() {
+    const nameInput = document.getElementById('session-name-input');
+    const sessionName = nameInput.value.trim();
+    const content = document.getElementById('textInput').value;
+
+    if (!sessionName) {
+        alert('Please enter a name for the session.');
+        return;
+    }
+
+    console.log(`DEBUG: Saving session: "${sessionName}"`);
+    historyManager.saveSession(sessionName, content);
+    renderSavedSessions();
+    nameInput.value = ''; // Clear input after saving
 }
 
 async function undoLastCommand() {
@@ -547,6 +783,41 @@ function exportOBJ() {
     } catch (error) {
         console.error('OBJ Export failed:', error);
         alert('OBJ export failed. The OBJExporter might not be loaded correctly. Check the console for details.');
+    }
+}
+
+function exportGLTF() {
+    try {
+        console.log('DEBUG: Exporting to GLTF...');
+        const objectsToExport = currentObjects.filter(obj => obj.isMesh);
+        if (objectsToExport.length === 0) {
+            alert('No objects to export! Please generate a model first.');
+            return;
+        }
+
+        const exporter = new THREE.GLTFExporter();
+
+        exporter.parse(
+            scene,
+            function (gltf) { // onCompleted callback
+                const output = JSON.stringify(gltf, null, 2);
+                const blob = new Blob([output], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'model.gltf';
+                a.click();
+                URL.revokeObjectURL(url);
+                console.log('DEBUG: GLTF export successful.');
+            },
+            function (error) { // onError callback
+                console.error('GLTF Export failed:', error);
+                alert('GLTF export failed. Check the console for details.');
+            }
+        );
+    } catch (error) {
+        console.error('GLTF Export failed:', error);
+        alert('GLTF export failed. The GLTFExporter might not be loaded correctly. Check the console for details.');
     }
 }
 

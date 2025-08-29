@@ -2,19 +2,22 @@
 
 A web-based application that converts natural language descriptions into 3D CAD models. Simply describe what you want to create, modify, and combine in plain English, and watch as your words transform into interactive 3D objects. This tool is the foundational design engine for the Iron Arm Exoskeleton project.
 
+![Text-to-CAD Screenshot](https://user-images.githubusercontent.com/your-username/your-repo/your-image.png) <!-- It's highly recommended to add a screenshot or GIF of the application in action! -->
+
 🎯 Development Priority: Phase 0
 The Text to CAD Generator is the first and most critical phase of the Iron Arm development pipeline. The success of all subsequent mechanical and electronic phases depends on this tool.
 
 🚀 Features
 
 * **Advanced 3D Operations**: Full support for Constructive Solid Geometry (CSG) including `union`, `subtraction`, and `intersection`.
+* **Direct Object Manipulation**: Click to select any object in the scene, adjust its properties in real-time via a properties panel, or duplicate it instantly.
 * **Object Naming & Referencing**: Assign custom names to objects and refer to them in subsequent commands for precise modifications.
 * **Iterative Design Workflow**: Modify existing objects by changing their `color`, `position`, `rotation`, and `scale`.
 * **Intelligent Positioning**: Understands relational commands like `"on top of"`.
-* **Robust User Experience**: Features a persistent Undo/Redo stack, an interactive command history panel, and visual feedback (ghosting & loading indicators) for complex operations.
+* **Robust User Experience**: Features a persistent Undo/Redo stack, an interactive command history panel, named session saving/loading, and visual feedback (ghosting & loading indicators) for complex operations.
 * **Expanded Shape Library**: Now includes `pyramids` in addition to cubes, spheres, cylinders, cones, and tori.
 * **Real-time 3D Visualization**: Interactive Three.js-powered viewer with intuitive orbit controls.
-* **Multiple Export Formats**: Export your final models as `STL` or `OBJ` files for 3D printing or use in other CAD software.
+* **Multiple Export Formats**: Export your final models as `STL`, `OBJ`, or `GLTF` files for 3D printing or use in other software.
 
 ⚡ Iron Arm Development Focus (Weeks 1-2)
 
@@ -67,12 +70,15 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 
 🎯 Quick Start
 
-1. **Open `main.html`** in a modern web browser.
+1. **Run on a Local Server**: Due to browser security policies (CORS) for JavaScript modules, you cannot simply open `main.html` from your local filesystem. You must serve the files from a local web server.
+    * **Recommended**: Use the Live Server extension for VS Code. Right-click `main.html` and select "Open with Live Server".
 2. **Describe your model** in the text area. Use multiple sentences for sequential operations.
 3. **Click "Generate 3D Model"**.
 4. **Interact** with the model using your mouse (Left-click: Rotate, Right-click: Pan, Wheel: Zoom).
 5. **Iterate** by modifying your text, using the interactive history panel, or using Undo/Redo.
-6. **Export** your final model as an STL file for 3D printing.
+
+* **Clear the scene** using the "Clear Scene" button to start fresh.
+* **Export** your final model as an STL, OBJ, or GLTF file.
 
 ## 🔬 Technical Architecture
 
@@ -124,7 +130,7 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 * **Advanced Positioning**: Implement more relational keywords like `"next to"`, `"inside"`, and `"aligned with"`.
 * **Material Properties**: Add support for changing material properties like `metallic`, `roughness`, and `opacity`.
 * **Enhanced Export**: Improve the STL export to be more robust and add support for other formats like OBJ or GLTF.
-* **AI Integration**: Use a Large Language Model (LLM) API for more flexible and powerful natural language understanding, moving beyond simple regex.
+* **AI Integration**: Use a Large Language Model (LLM) API for more flexible and powerful natural language understanding, moving beyond the current regex-based approach.
 
 ## 🤝 Contributing
 
@@ -140,6 +146,7 @@ We welcome contributions, especially those that enhance exoskeleton development:
 * **Discussions**: Join the maker community Discord.
 * **Related Resources**: Cross-reference with the PI Planner and Iron Arm assembly guides.
 
-Part of the Iron Arm Exoskeleton Project Suite* Democratizing robotics development through intuitive tools.
+---
+*Part of the Iron Arm Exoskeleton Project Suite - Democratizing robotics development through intuitive tools.*
 
 Transform your ideas into reality with the power of words.

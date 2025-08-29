@@ -210,6 +210,90 @@ button:active {
     margin-top: 30px;
 }
 
+.history-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.session-save-group {
+    display: flex;
+    gap: 8px;
+}
+
+#session-name-input {
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    transition: border-color 0.3s ease;
+    width: 120px;
+}
+
+#session-name-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.control-btn-small {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    width: auto;
+    background: #667eea;
+    border-radius: 6px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.control-btn-small:hover {
+    background: #5a6fd5;
+    transform: none;
+    box-shadow: none;
+}
+
+.control-btn-small:active {
+    transform: scale(0.98);
+}
+
+.control-btn-small.delete {
+    background: #e74c3c;
+}
+
+.control-btn-small.delete:hover {
+    background: #c0392b;
+}
+
+.saved-sessions {
+    margin-top: 30px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+}
+
+.sessions-title {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+#saved-sessions-list .session-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#saved-sessions-list .session-item-name {
+    font-weight: 500;
+}
+
+#saved-sessions-list .session-item-buttons {
+    display: flex;
+    gap: 8px;
+}
+
 .history {
     margin-top: 30px;
     border-top: 1px solid #e0e0e0;
@@ -218,15 +302,23 @@ button:active {
 
 .history-title {
     color: #333;
-    margin-bottom: 15px;
     font-size: 18px;
+    margin: 0; /* Reset margin as it's now in a flex container */
 }
 
 #history-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    max-height: 200px;
+    max-height: 150px; /* Adjusted height */
+    overflow-y: auto; /* Keep this for command history */
+}
+
+#saved-sessions-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 150px; /* Adjusted height */
     overflow-y: auto;
 }
 
@@ -243,6 +335,10 @@ button:active {
     transition: background-color 0.2s ease;
 }
 
+#saved-sessions-list li {
+    cursor: default;
+}
+
 #history-list li:hover:not(.history-empty) {
     background-color: #e9ecef;
 }
@@ -253,6 +349,84 @@ button:active {
     background: #f8f9fa !important;
     border-left: 4px solid #ccc !important;
     cursor: default !important;
+}
+
+.properties-panel {
+    margin-top: 30px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+}
+
+.properties-panel.hidden {
+    display: none;
+}
+
+.properties-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.properties-title {
+    color: #333;
+    margin: 0;
+    font-size: 18px;
+}
+
+.prop-group {
+    margin-bottom: 15px;
+}
+
+.prop-label {
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.prop-value {
+    font-weight: 600;
+    color: #333;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+}
+
+.prop-vec3 {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+
+.prop-vec3 span {
+    font-weight: 500;
+    color: #777;
+    text-align: center;
+}
+
+.prop-vec3 input[type="number"] {
+    width: 100%;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    transition: border-color 0.3s ease;
+    -moz-appearance: textfield; /* Firefox */
+    appearance: textfield;
+}
+
+.prop-vec3 input[type="number"]::-webkit-outer-spin-button,
+.prop-vec3 input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.prop-vec3 input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
 }
 
 .examples-title {

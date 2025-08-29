@@ -1,4 +1,5 @@
 const HISTORY_STORAGE_KEY = 'text-to-cad-history';
+const SAVED_SESSIONS_KEY = 'text-to-cad-sessions';
 
 class HistoryManager {
     constructor() {
@@ -78,6 +79,28 @@ class HistoryManager {
     
     canRedo() { 
         return this.redoStack.length > 0; 
+    }
+
+    getSavedSessions() {
+        const sessions = localStorage.getItem(SAVED_SESSIONS_KEY);
+        return sessions ? JSON.parse(sessions) : {};
+    }
+
+    saveSession(name, content) {
+        if (!name || !content) {
+            console.warn("Save session failed: Name or content is empty.");
+            return false;
+        }
+        const sessions = this.getSavedSessions();
+        sessions[name] = content;
+        localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(sessions));
+        return true;
+    }
+
+    deleteSession(name) {
+        const sessions = this.getSavedSessions();
+        delete sessions[name];
+        localStorage.setItem(SAVED_SESSIONS_KEY, JSON.stringify(sessions));
     }
 }
 
