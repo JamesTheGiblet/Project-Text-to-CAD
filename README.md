@@ -1,5 +1,13 @@
 # Text to CAD Generator
 
+![Project Status](https://img.shields.io/badge/Status-Active-green)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Framework](https://img.shields.io/badge/Framework-Three.js-red)
+
+A web-based application that converts natural language descriptions into 3D CAD models. Simply describe what you want to create in plain English, and watch as your words transform into interactive 3D objects.
+
+# Text to CAD Generator
+
 ![Project Status](https://img.shields.io/badge/Status-Priority%20Phase%200-red)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Framework](https://img.shields.io/badge/Framework-Three.js-red)
