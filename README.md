@@ -14,7 +14,7 @@ The Text to CAD Generator is the first and most critical phase of the Iron Arm d
 * **Robust User Experience**: Features a persistent Undo/Redo stack, an interactive command history panel, and visual feedback (ghosting & loading indicators) for complex operations.
 * **Expanded Shape Library**: Now includes `pyramids` in addition to cubes, spheres, cylinders, cones, and tori.
 * **Real-time 3D Visualization**: Interactive Three.js-powered viewer with intuitive orbit controls.
-* **STL Export**: Export your final models for 3D printing or use in other CAD software.
+* **Multiple Export Formats**: Export your final models as `STL` or `OBJ` files for 3D printing or use in other CAD software.
 
 ⚡ Iron Arm Development Focus (Weeks 1-2)
 

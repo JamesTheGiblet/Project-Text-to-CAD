@@ -68,9 +68,17 @@ class HistoryManager {
         }
     }
 
-    getCurrentState() { return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ""; }
-    canUndo() { return this.undoStack.length >= 2; }
-    canRedo() { return this.redoStack.length > 0; }
+    getCurrentState() { 
+        return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ""; 
+    }
+    
+    canUndo() { 
+        return this.undoStack.length >= 2; 
+    }
+    
+    canRedo() { 
+        return this.redoStack.length > 0; 
+    }
 }
 
 export const historyManager = new HistoryManager();
