@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text to CAD Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.rawgit.com/chandlerprall/THREE.CSGMesh/v1.0.0/THREE.CSGMesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three-js-csg@2.0.0/dist/three-js-csg.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
@@ -22,7 +22,7 @@
                 <textarea id="textInput" placeholder="e.g., 'Create a blue cube that is 2 units wide' or 'Make a red sphere with radius 1.5'"></textarea>
             </div>
             
-            <button id="generate-btn">Generate 3D Model</button>
+            <button id="generate-btn">Generate Blueprint</button>
             <div class="examples">
                 <h3 class="examples-title">💡 Try these examples:</h3>
 
@@ -59,6 +59,16 @@
                 <div class="example" data-example-text='Create a sphere named "my_sphere". Then scale the object named "my_sphere" by 2.'>
                     <div class="example-title">Scale Named Object</div>
                     <div class="example-text">Create an object and then scale it by name.</div>
+                </div>
+
+                <div class="example" data-example-text="Create a gear with 10 teeth, a radius of 3, and a hole radius of 1.">
+                    <div class="example-title">Gear</div>
+                    <div class="example-text">Create a gear with custom teeth and hole size.</div>
+                </div>
+
+                <div class="example" data-example-text="Create a pyramid with radius 1.5 and height 3.">
+                    <div class="example-title">Pyramid</div>
+                    <div class="example-text">Create a pyramid with radius 1.5 and height 3.</div>
                 </div>
             </div>
             <div class="history">
@@ -109,6 +119,11 @@
                         <span>Z</span><input type="number" step="0.1" id="prop-scale-z" title="Scale Z" placeholder="Z">
                     </div>
                 </div>
+                <div class="input-group">
+                    <label for="modificationInput">Modify with text:</label>
+                    <textarea id="modificationInput" placeholder="e.g., 'make it red' or 'move up by 2'" rows="2"></textarea>
+                    <button id="modify-btn" class="control-btn-small">Apply</button>
+                </div>
             </div>
         </div>
         
@@ -131,6 +146,33 @@
             </div>
         </div>
     </div>
+
+    <!-- Blueprint Modal -->
+    <div id="blueprint-modal" class="blueprint-modal-overlay hidden">
+        <div class="blueprint-modal-content">
+            <h2>Blueprint Confirmation</h2>
+            <p>Does this look correct? Confirm to generate the full 3D model.</p>
+            <div class="blueprint-views-container">
+                <div class="blueprint-view">
+                    <canvas id="blueprint-front-view"></canvas>
+                    <div class="blueprint-label">Front View</div>
+                </div>
+                <div class="blueprint-view">
+                    <canvas id="blueprint-top-view"></canvas>
+                    <div class="blueprint-label">Top View</div>
+                </div>
+                <div class="blueprint-view">
+                    <canvas id="blueprint-side-view"></canvas>
+                    <div class="blueprint-label">Side View</div>
+                </div>
+            </div>
+            <div class="blueprint-actions">
+                <button id="cancel-blueprint-btn" class="control-btn-small delete">Cancel</button>
+                <button id="confirm-blueprint-btn" class="control-btn-small">Confirm & Generate 3D</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js" type="module" defer></script>
 </body>
 </html>

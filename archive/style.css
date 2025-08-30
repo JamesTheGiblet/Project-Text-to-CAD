@@ -415,7 +415,7 @@ button:active {
     font-size: 13px;
     transition: border-color 0.3s ease;
     -moz-appearance: textfield; /* Firefox */
-    appearance: textfield;
+    appearance: textfield; /* Standard */
 }
 
 .prop-vec3 input[type="number"]::-webkit-outer-spin-button,
@@ -543,6 +543,78 @@ button:active {
 
 }
 
+.blueprint-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
+.blueprint-modal-overlay.hidden {
+    display: none;
+}
+
+.blueprint-modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 800px;
+    text-align: center;
+}
+
+.blueprint-modal-content h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.blueprint-modal-content p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.blueprint-views-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.blueprint-view {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.blueprint-view canvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background-color: #f0f2f5;
+}
+
+.blueprint-label {
+    background: #e9ecef;
+    padding: 8px;
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.blueprint-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
 
 
 .info {

@@ -25,7 +25,7 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 
 ## 1. Upper Arm Cuff Bracket (Week 1 Priority)
 
-**Command:** `Create a gray box with width 12, height 4, depth 2.5 named "cuff". Then create a box with width 6, height 2, depth 0.8 named "flange" and move it to y 3. Then unite it with "cuff".`
+**Command:** `Create a gray box with width 12, height 4, depth 2.5 named "cuff". Then add a groove to "cuff" with width 10, depth 0.5.`
 
 * Main body: gray box with width 12, height 4, depth 2.5
 * Servo attachment flange: rectangle with width 6, height 2, thickness 0.8
@@ -73,9 +73,10 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 1. **Run on a Local Server**: Due to browser security policies (CORS) for JavaScript modules, you cannot simply open `main.html` from your local filesystem. You must serve the files from a local web server.
     * **Recommended**: Use the Live Server extension for VS Code. Right-click `main.html` and select "Open with Live Server".
 2. **Describe your model** in the text area. Use multiple sentences for sequential operations.
-3. **Click "Generate 3D Model"**.
-4. **Interact** with the model using your mouse (Left-click: Rotate, Right-click: Pan, Wheel: Zoom).
-5. **Iterate** by modifying your text, using the interactive history panel, or using Undo/Redo.
+3. **Click "Generate Blueprint"** to see a 2D preview of your design.
+4. **Click "Confirm & Generate 3D"** in the blueprint window to create the final model.
+5. **Interact** with the model using your mouse (Left-click: Rotate, Right-click: Pan, Wheel: Zoom).
+6. **Iterate** by modifying your text, using the interactive history panel, or using Undo/Redo.
 
 * **Clear the scene** using the "Clear Scene" button to start fresh.
 * **Export** your final model as an STL, OBJ, or GLTF file.
@@ -99,6 +100,7 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 | Torus | `Make a yellow torus with inner radius 0.5 and outer radius 1.2` |
 | Cone | `Create a purple cone with base radius 1 and height 2.5` |
 | Pyramid | `Create a pyramid with base radius 2 and height 3` |
+| Gear | `Create a gear with 10 teeth and a radius of 3` |
 
 ### Modification Commands
 
@@ -114,7 +116,7 @@ My immediate mission is designing these 5 essential Iron Arm components by gener
 
 | Command | Example |
 |---|---|
-| Union | `... and unite it with the cube` |
+| Union | `Create a sphere and unite it with the cube` OR `... then unite it with "my_box"` |
 | Subtraction | `... and cut it through the cube` |
 | Intersection | `... and intersect it with the sphere` |
 | Relational | `... and put it on top of the cylinder` |

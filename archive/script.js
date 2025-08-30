@@ -7,6 +7,7 @@ let currentObjects = [];
 let selectedObject = null;
 let selectionHighlight = null;
 let namedMeshMap = new Map();
+let pendingBlueprintText = null;
 
 // Initialize Three.js scene
 async function initScene() {
@@ -68,27 +69,38 @@ async function initScene() {
 }
 
 function setupEventListeners() {
-    document.getElementById('generate-btn').addEventListener('click', generateCAD);
-    document.getElementById('undo-btn').addEventListener('click', undoLastCommand);
-    document.getElementById('redo-btn').addEventListener('click', redoLastCommand);
-    document.getElementById('reset-view-btn').addEventListener('click', resetView);
-    document.getElementById('clear-scene-btn').addEventListener('click', clearScene);
-    document.getElementById('export-stl-btn').addEventListener('click', exportSTL);
-    document.getElementById('save-session-btn').addEventListener('click', saveCurrentSession);
-    document.getElementById('export-obj-btn').addEventListener('click', exportOBJ);
-    document.getElementById('export-gltf-btn').addEventListener('click', exportGLTF);
+    // A more robust way to add listeners. It checks if the element exists first.
+    const addListener = (id, event, handler) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener(event, handler);
+        } else {
+            console.warn(`DEBUG: Element with ID "${id}" not found. Cannot attach event listener.`);
+        }
+    };
+
+    addListener('generate-btn', 'click', generateBlueprint);
+    addListener('undo-btn', 'click', undoLastCommand);
+    addListener('redo-btn', 'click', redoLastCommand);
+    addListener('reset-view-btn', 'click', resetView);
+    addListener('clear-scene-btn', 'click', clearScene);
+    addListener('export-stl-btn', 'click', exportSTL);
+    addListener('save-session-btn', 'click', saveCurrentSession);
+    addListener('export-obj-btn', 'click', exportOBJ);
+    addListener('confirm-blueprint-btn', 'click', confirmAndGenerate3D);
+    addListener('cancel-blueprint-btn', 'click', cancelBlueprint);
+    addListener('export-gltf-btn', 'click', exportGLTF);
+    addListener('duplicate-btn', 'click', duplicateSelectedObject);
 
     document.querySelectorAll('.example').forEach(exampleEl => {
         exampleEl.addEventListener('click', () => {
             const exampleText = exampleEl.dataset.exampleText;
             console.log(`DEBUG: Example clicked: "${exampleText}"`);
-            loadExample(exampleText); // This will now trigger generation
+            loadExample(exampleText);
         });
     });
 
-    // Add listeners for the new properties panel
     setupPropertiesPanelListeners();
-    document.getElementById('duplicate-btn').addEventListener('click', duplicateSelectedObject);
 
     console.log('DEBUG: Event listeners set up.');
 }
@@ -262,17 +274,87 @@ function duplicateSelectedObject() {
     selectObject(newMesh);
 }
 
+async function generateBlueprint() {
+    console.log('DEBUG: generateBlueprint called.');
+    const text = document.getElementById('textInput').value;
+    if (!text.trim()) {
+        alert("Please describe an object first.");
+        return;
+    }
+    pendingBlueprintText = text;
+
+    const blueprintModal = document.getElementById('blueprint-modal');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    loadingIndicator.classList.remove('hidden');
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    try {
+        const commands = parseText(pendingBlueprintText);
+        const { finalMeshes } = await _buildMeshesFromCommands(commands);
+
+        if (finalMeshes.length > 0) {
+            const tempScene = new THREE.Scene();
+            finalMeshes.forEach(mesh => tempScene.add(mesh.clone())); // Use clones to not affect final meshes
+            renderBlueprintViews(tempScene, finalMeshes);
+            blueprintModal.classList.remove('hidden');
+        } else {
+            alert("Could not generate a valid blueprint from the description.");
+        }
+    } catch (error) {
+        console.error("Blueprint generation failed:", error);
+        alert(`An error occurred while generating the blueprint. Please check the console for details.\n\nError: ${error.message}`);
+    } finally {
+        loadingIndicator.classList.add('hidden');
+    }
+}
+
+function renderBlueprintViews(sceneToRender, objects) {
+    const boundingBox = new THREE.Box3();
+    objects.forEach(obj => boundingBox.expandByObject(obj));
+
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const camSize = maxDim * 1.2;
+
+    const views = {
+        'front': { canvasId: 'blueprint-front-view', position: new THREE.Vector3(center.x, center.y, center.z + maxDim) },
+        'top':   { canvasId: 'blueprint-top-view',   position: new THREE.Vector3(center.x, center.y + maxDim, center.z), up: new THREE.Vector3(0, 0, -1) },
+        'side':  { canvasId: 'blueprint-side-view',  position: new THREE.Vector3(center.x + maxDim, center.y, center.z) }
+    };
+
+    for (const config of Object.values(views)) {
+        const canvas = document.getElementById(config.canvasId);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setClearColor(0xf0f2f5, 1);
+        const cam = new THREE.OrthographicCamera(-camSize / 2, camSize / 2, camSize / 2, -camSize / 2, 0.1, maxDim * 2);
+        cam.position.copy(config.position);
+        if (config.up) cam.up.copy(config.up);
+        cam.lookAt(center);
+        renderer.render(sceneToRender, cam);
+        renderer.dispose();
+    }
+}
+
 // Text parsing and CAD generation
 function parseText(text) {
     const commands = [];
-    const sentences = text.toLowerCase().split(/[.!?]+/).filter(s => s.trim());
+    // Split commands by periods or the word "then" for more natural sequences.
+    const sentences = text.toLowerCase().split(/\s*\.\s*|\s*\bthen\b\s*/i).filter(s => s.trim());
     
     sentences.forEach(sentence => {
         // Try parsing modification commands first
         let modificationCommand = Transforms.extractColorChange(sentence) || 
                               Transforms.extractMove(sentence) ||
                               Transforms.extractRotationChange(sentence) ||
-                              Transforms.extractScaleChange(sentence);
+                              Transforms.extractScaleChange(sentence) ||
+                              Transforms.extractStandaloneCSG(sentence); // Added new parser
+        
+        // If no modification command, check for a feature command
+        if (!modificationCommand) {
+            modificationCommand = Transforms.extractFeature(sentence);
+        }
         
         if (modificationCommand) {
             if (modificationCommand.action === 'color') {
@@ -324,9 +406,11 @@ function parseText(text) {
 
         // Handle multiple objects
         if (commandCreated) {
-            const countMatch = sentence.match(/(\d+)\s+/);
+            // A more specific regex to avoid capturing numbers from parameters like "teeth" or "radius".
+            // It looks for a number at the start of the sentence, optionally preceded by a creation verb.
+            const countMatch = sentence.match(/^(?:create|make|add)?\s*(\d+)\s+/i);
             if (countMatch && commands.length > 0) {
-                const count = parseInt(countMatch[1]);
+                const count = parseInt(countMatch[1]); // The number is in the first capturing group
                 const lastCmd = commands[commands.length - 1];
                 lastCmd.count = count;
             }
@@ -442,7 +526,27 @@ function extractColor(text) {
     return null;
 }
 
-async function generateCAD() {
+async function confirmAndGenerate3D() {
+    console.log('DEBUG: Blueprint confirmed. Generating final 3D model.');
+    const blueprintModal = document.getElementById('blueprint-modal');
+    blueprintModal.classList.add('hidden');
+
+    if (pendingBlueprintText !== null) {
+        historyManager.push(pendingBlueprintText);
+        await _generateSceneFromText(pendingBlueprintText);
+        updateUndoRedoStates();
+        pendingBlueprintText = null;
+    }
+}
+
+function cancelBlueprint() {
+    const blueprintModal = document.getElementById('blueprint-modal');
+    blueprintModal.classList.add('hidden');
+    pendingBlueprintText = null;
+    console.log('DEBUG: Blueprint cancelled.');
+}
+
+async function generateCAD() { // This is now the main entry point for non-blueprint generation
     console.log('DEBUG: generateCAD called.');
     const text = document.getElementById('textInput').value;
     historyManager.push(text);
@@ -450,7 +554,7 @@ async function generateCAD() {
     updateUndoRedoStates();
 }
 
-async function _generateSceneFromText(text) {
+async function _generateSceneFromText(text) { // This populates the MAIN scene
     console.log('DEBUG: Starting scene generation from text.');
     updateHistory(text);
 
@@ -466,21 +570,121 @@ async function _generateSceneFromText(text) {
     }
 
     const commands = parseText(text);
+    const { finalMeshes, finalNamedMeshMap } = await _buildMeshesFromCommands(commands);
+
+    // Populate the main scene with the results
+    finalMeshes.forEach(mesh => addMeshToScene(mesh, -1)); // Add to global scene and trackers
+    namedMeshMap = finalNamedMeshMap;
+
+    console.log('DEBUG: Scene generation finished.');
+    if (currentObjects.length > 0) {
+        fitCameraToObjects();
+    }
+}
+
+async function _buildMeshesFromCommands(commands) {
     console.log(`DEBUG: Parsed ${commands.length} commands.`);
     const meshMap = new Map();
-    namedMeshMap.clear();
+    const localNamedMeshMap = new Map();
     
-    for (const [index, cmd] of commands.entries()) {
+    for (const [index, cmd] of commands.entries()) { // Use for...of to allow await inside
         // Handle modification commands
+        if (cmd.type === 'feature') {
+            const targetData = localNamedMeshMap.get(cmd.target.value);
+            if (targetData) {
+                const targetMesh = targetData.mesh;
+                const targetBox = new THREE.Box3().setFromObject(targetMesh);
+                const targetSize = targetBox.getSize(new THREE.Vector3());
+
+                let featureGeom;
+                let featureMesh;
+                let operation;
+
+                if (cmd.featureType === 'groove') {
+                    // For a groove, the 'height' from the command corresponds to the cutting tool's length.
+                    featureGeom = new THREE.BoxGeometry(cmd.params.width, targetSize.y * 1.2, cmd.params.depth);
+                    featureMesh = new THREE.Mesh(featureGeom);
+                    operation = 'subtract';
+                } else if (cmd.featureType === 'tab') {
+                    featureGeom = new THREE.BoxGeometry(cmd.params.width, cmd.params.height, cmd.params.depth);
+                    featureMesh = new THREE.Mesh(featureGeom);
+                    operation = 'union';
+                }
+
+                if (featureMesh) {
+                    // Position the feature relative to the target's face
+                    // This is a simplified positioning logic
+                    if (cmd.face === 'top') {
+                        featureMesh.position.set(targetMesh.position.x, targetBox.max.y, targetMesh.position.z);
+                    } // Add other faces (bottom, front, etc.) here as needed
+
+                    let resultMesh;
+                    if (operation === 'subtract') resultMesh = Transforms.performSubtraction(featureMesh, targetMesh);
+                    if (operation === 'union') resultMesh = Transforms.performUnion(featureMesh, targetMesh);
+
+                    resultMesh.name = targetMesh.name;
+                    meshMap.set(targetData.index, [resultMesh]);
+                    localNamedMeshMap.set(resultMesh.name, { mesh: resultMesh, index: targetData.index });
+                }
+            }
+            continue;
+        }
+
         if (cmd.type === 'modify') {
+            if (cmd.isStandalone) { // Handle commands like "unite it with 'cuff'"
+                // Find the tool mesh (the last created object)
+                let toolMesh = null;
+                let toolCmdIndex = -1;
+                for (let j = index - 1; j >= 0; j--) {
+                    if (meshMap.has(j)) {
+                        const prevMeshes = meshMap.get(j);
+                        if (prevMeshes.length > 0) {
+                            toolMesh = prevMeshes[prevMeshes.length - 1];
+                            toolCmdIndex = j;
+                            break;
+                        }
+                    }
+                }
+
+                // Find the target mesh
+                let targetMesh = null;
+                let targetCmdIndex = -1;
+                if (cmd.target.type === 'name' && localNamedMeshMap.has(cmd.target.value)) {
+                    const targetData = localNamedMeshMap.get(cmd.target.value);
+                    targetMesh = targetData.mesh;
+                    targetCmdIndex = targetData.index;
+                }
+
+                if (toolMesh && targetMesh) {
+                    let resultMesh;
+                    if (cmd.action === 'union') resultMesh = Transforms.performUnion(toolMesh, targetMesh);
+                    else if (cmd.action === 'subtract') resultMesh = Transforms.performSubtraction(toolMesh, targetMesh);
+                    else if (cmd.action === 'intersection') resultMesh = Transforms.performIntersection(toolMesh, targetMesh);
+
+                    if (resultMesh) {
+                        // The tool mesh has been consumed, remove it from its original command's list
+                        const toolMeshes = meshMap.get(toolCmdIndex);
+                        meshMap.set(toolCmdIndex, toolMeshes.filter(m => m !== toolMesh));
+
+                        // The target mesh has been replaced, update it in the maps
+                        resultMesh.name = targetMesh.name;
+                        meshMap.set(targetCmdIndex, [resultMesh]);
+                        if (resultMesh.name) {
+                            localNamedMeshMap.set(resultMesh.name, { mesh: resultMesh, index: targetCmdIndex });
+                        }
+                    }
+                } else {
+                    console.warn("Could not perform standalone CSG. Tool or target not found.", { tool: toolMesh, target: targetMesh });
+                }
+            }
             if (cmd.action === 'color' && cmd.target.type === 'name') {
-                if (namedMeshMap.has(cmd.target.value)) {
-                    const targetData = namedMeshMap.get(cmd.target.value);
+                if (localNamedMeshMap.has(cmd.target.value)) {
+                    const targetData = localNamedMeshMap.get(cmd.target.value);
                     targetData.mesh.material.color.set(cmd.color);
                 }
             } else if (cmd.action === 'move' && cmd.target.type === 'name') {
-                if (namedMeshMap.has(cmd.target.value)) {
-                    const targetData = namedMeshMap.get(cmd.target.value);
+                if (localNamedMeshMap.has(cmd.target.value)) {
+                    const targetData = localNamedMeshMap.get(cmd.target.value);
                     const mesh = targetData.mesh;
                     mesh.position.set(
                         cmd.position.x ?? mesh.position.x,
@@ -489,16 +693,16 @@ async function _generateSceneFromText(text) {
                     );
                 }
             } else if (cmd.action === 'rotate' && cmd.target.type === 'name') {
-                if (namedMeshMap.has(cmd.target.value)) {
-                    const targetData = namedMeshMap.get(cmd.target.value);
+                if (localNamedMeshMap.has(cmd.target.value)) {
+                    const targetData = localNamedMeshMap.get(cmd.target.value);
                     const mesh = targetData.mesh;
                     mesh.rotation.x += cmd.rotation.x || 0;
                     mesh.rotation.y += cmd.rotation.y || 0;
                     mesh.rotation.z += cmd.rotation.z || 0;
                 }
             } else if (cmd.action === 'scale' && cmd.target.type === 'name') {
-                if (namedMeshMap.has(cmd.target.value)) {
-                    const targetData = namedMeshMap.get(cmd.target.value);
+                if (localNamedMeshMap.has(cmd.target.value)) {
+                    const targetData = localNamedMeshMap.get(cmd.target.value);
                     targetData.mesh.scale.multiplyScalar(cmd.factor);
                 }
             }
@@ -543,8 +747,8 @@ async function _generateSceneFromText(text) {
 
                 // Find target mesh
                 if (csgTargetInfo.target.type === 'name') {
-                    if (namedMeshMap.has(csgTargetInfo.target.value)) {
-                        const targetData = namedMeshMap.get(csgTargetInfo.target.value);
+                    if (localNamedMeshMap.has(csgTargetInfo.target.value)) {
+                        const targetData = localNamedMeshMap.get(csgTargetInfo.target.value);
                         targetMesh = targetData.mesh;
                         targetCmdIndex = targetData.index;
                     }
@@ -559,12 +763,10 @@ async function _generateSceneFromText(text) {
                 }
 
                 if (targetMesh) {
-                    if (typeof THREE.CSG === 'undefined') {
-                        console.error("THREE.CSGMesh.js is not loaded. Cannot perform CSG operations.");
-                        // Fallback: just add the tool mesh as a normal object
-                        scene.add(mesh);
+                    if (typeof CSG === 'undefined') {
+                        console.error("CSG library is not loaded. Cannot perform CSG operations.");
                         createdMeshes.push(mesh);
-                        continue; // to the next command
+                        continue;
                     }
                     // Show ghost and perform CSG operation
                     const ghostMaterial = new THREE.MeshBasicMaterial({
@@ -573,15 +775,10 @@ async function _generateSceneFromText(text) {
                         transparent: true,
                         opacity: 0.5
                     });
-                    mesh.material = ghostMaterial;
-                    scene.add(mesh);
-
-                    const loadingIndicator = document.getElementById('loading-indicator');
-                    loadingIndicator.classList.remove('hidden');
 
                     await new Promise(resolve => setTimeout(resolve, 50));
 
-                        try {
+                        try { // This try/catch is for the CSG operation itself
                             let resultMesh;
                             console.log(`DEBUG: Performing CSG operation: ${csgOperation}`);
                             if (csgOperation === 'subtract') {
@@ -594,33 +791,21 @@ async function _generateSceneFromText(text) {
 
                             resultMesh.name = targetMesh.name;
                             scene.remove(targetMesh);
-                            scene.remove(mesh);
-                            scene.add(resultMesh);
-
-                            const targetIndexInCurrentObjects = currentObjects.indexOf(targetMesh);
-                            if (targetIndexInCurrentObjects > -1) {
-                                currentObjects.splice(targetIndexInCurrentObjects, 1, resultMesh);
-                            }
-
+                            scene.remove(mesh); // Remove the ghost
+                            
+                            // Replace the old mesh in the map with the new one
                             meshMap.set(targetCmdIndex, [resultMesh]);
                             if (resultMesh.name) {
-                                namedMeshMap.set(resultMesh.name, { mesh: resultMesh, index: targetCmdIndex });
+                                localNamedMeshMap.set(resultMesh.name, { mesh: resultMesh, index: targetCmdIndex });
                             }
                         } catch (error) {
                             console.warn('CSG operation failed. The tool shape will be added to the scene instead.', error);
-                            // If CSG fails, just add the tool shape as a normal object
-                            mesh.material = material; // Revert from ghost material
-                            scene.add(mesh);
                             createdMeshes.push(mesh);
                         }
-
-                    loadingIndicator.classList.add('hidden');
                 } else {
-                    scene.add(mesh);
                     createdMeshes.push(mesh);
                 }
             } else {
-                scene.add(mesh);
                 createdMeshes.push(mesh);
             }
         }
@@ -628,29 +813,24 @@ async function _generateSceneFromText(text) {
         if (createdMeshes.length > 0) {
             meshMap.set(index, createdMeshes);
             if (cmd.name) {
-                addNamedMesh(createdMeshes[0], cmd.name, index);
+                const namedMesh = createdMeshes[0];
+                namedMesh.name = cmd.name;
+                localNamedMeshMap.set(cmd.name, { mesh: namedMesh, index: index });
             }
-            currentObjects.push(...createdMeshes);
         }
     }
 
-    console.log('DEBUG: Scene generation finished.');
-    if (currentObjects.length > 0) {
-        fitCameraToObjects();
-    }
+    // Collect all final meshes from the meshMap
+    const finalMeshes = Array.from(meshMap.values()).flat();
+    return { finalMeshes, finalNamedMeshMap: localNamedMeshMap };
 }
 
 function addMeshToScene(mesh, commandIndex) {
     scene.add(mesh);
     currentObjects.push(mesh);
     if (mesh.name) {
-        addNamedMesh(mesh, mesh.name, commandIndex);
+        namedMeshMap.set(mesh.name, { mesh: mesh, index: commandIndex });
     }
-}
-
-function addNamedMesh(mesh, name, commandIndex) {
-    mesh.name = name;
-    namedMeshMap.set(name, { mesh: mesh, index: commandIndex });
 }
 
 function fitCameraToObjects() {
@@ -694,6 +874,7 @@ async function clearScene() {
     document.getElementById('textInput').value = '';
     await generateCAD();
 }
+
 
 function saveCurrentSession() {
     const nameInput = document.getElementById('session-name-input');

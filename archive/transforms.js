@@ -262,6 +262,71 @@ export function extractScaleChange(text) {
 }
 
 /**
+ * Extracts a standalone CSG command that refers to the last object ("it").
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractStandaloneCSG(text) {
+    // Matches "unite it with 'name'", "cut it through 'name'", etc.
+    const csgRegex = /^(unite|combine|add|cut|subtract|intersect)\s+it\s+(?:with|to|through)\s+(?:the\s+)?(?:object\s+named\s+)?["']([^"']+)["']/;
+    const match = text.match(csgRegex);
+
+    if (match) {
+        const actionWord = match[1].trim();
+        const targetName = match[2];
+        let action;
+
+        if (['unite', 'combine', 'add'].includes(actionWord)) action = 'union';
+        else if (['cut', 'subtract'].includes(actionWord)) action = 'subtract';
+        else if (['intersect'].includes(actionWord)) action = 'intersection';
+
+        if (action) {
+            return {
+                type: 'modify',
+                action: action,
+                isStandalone: true, // Flag to indicate this is a standalone operation
+                target: { type: 'name', value: targetName }
+            };
+        }
+    }
+    return null;
+}
+
+/**
+ * Extracts a feature command (e.g., adding a groove or tab).
+ * @param {string} text The text to parse.
+ * @returns {object|null} A command object or null.
+ */
+export function extractFeature(text) {
+    // add a groove to "cuff" on the top face with width 1, depth 0.5
+    const featureRegex = /(?:add|create)\s+a\s+(groove|tab)\s+to\s+(?:the\s+)?(?:object\s+named\s+)?["']([^"']+)["']/;
+    const match = text.match(featureRegex);
+
+    if (match) {
+        const featureType = match[1];
+        const targetName = match[2];
+
+        // Find face information
+        const faceRegex = /on\s+the\s+(top|bottom|front|back|left|right)\s+face/;
+        const faceMatch = text.match(faceRegex);
+        const face = faceMatch ? faceMatch[1] : 'top'; // Default to top face
+
+        const width = parseFloat(text.match(/width\s+(-?\d+\.?\d*)/)?.[1] || 1);
+        const height = parseFloat(text.match(/height\s+(-?\d+\.?\d*)/)?.[1] || 1);
+        const depth = parseFloat(text.match(/depth\s+(-?\d+\.?\d*)/)?.[1] || 1);
+
+        return {
+            type: 'feature',
+            featureType: featureType,
+            target: { type: 'name', value: targetName },
+            face: face,
+            params: { width, height, depth }
+        };
+    }
+    return null;
+}
+
+/**
  * Applies rotation to a mesh based on a command object.
  * @param {THREE.Mesh} mesh The mesh to rotate.
  * @param {object} cmd The command object.
@@ -329,13 +394,13 @@ export function performSubtraction(toolMesh, targetMesh) {
     toolMesh.updateMatrix();
     targetMesh.updateMatrix();
 
-    // Use the global THREE.CSG object from the included library
-    const toolCSG = THREE.CSG.fromMesh(toolMesh);
-    const targetCSG = THREE.CSG.fromMesh(targetMesh);
+    // Use the global CSG object from the included library
+    const toolCSG = CSG.fromMesh(toolMesh);
+    const targetCSG = CSG.fromMesh(targetMesh);
 
     const resultCSG = targetCSG.subtract(toolCSG);
 
-    const resultMesh = THREE.CSG.toMesh(resultCSG, targetMesh.material);
+    const resultMesh = CSG.toMesh(resultCSG, targetMesh.material);
     resultMesh.geometry.computeVertexNormals(); // Recalculate normals for correct lighting
 
     // Carry over the original position and rotation
@@ -355,12 +420,12 @@ export function performUnion(toolMesh, targetMesh) {
     toolMesh.updateMatrix();
     targetMesh.updateMatrix();
 
-    const toolCSG = THREE.CSG.fromMesh(toolMesh);
-    const targetCSG = THREE.CSG.fromMesh(targetMesh);
+    const toolCSG = CSG.fromMesh(toolMesh);
+    const targetCSG = CSG.fromMesh(targetMesh);
 
     const resultCSG = targetCSG.union(toolCSG);
 
-    const resultMesh = THREE.CSG.toMesh(resultCSG, targetMesh.material);
+    const resultMesh = CSG.toMesh(resultCSG, targetMesh.material);
     resultMesh.geometry.computeVertexNormals();
 
     resultMesh.position.copy(targetMesh.position);
@@ -379,12 +444,12 @@ export function performIntersection(toolMesh, targetMesh) {
     toolMesh.updateMatrix();
     targetMesh.updateMatrix();
 
-    const toolCSG = THREE.CSG.fromMesh(toolMesh);
-    const targetCSG = THREE.CSG.fromMesh(targetMesh);
+    const toolCSG = CSG.fromMesh(toolMesh);
+    const targetCSG = CSG.fromMesh(targetMesh);
 
     const resultCSG = targetCSG.intersect(toolCSG);
 
-    const resultMesh = THREE.CSG.toMesh(resultCSG, targetMesh.material);
+    const resultMesh = CSG.toMesh(resultCSG, targetMesh.material);
     resultMesh.geometry.computeVertexNormals();
 
     resultMesh.position.copy(targetMesh.position);

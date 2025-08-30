@@ -104,6 +104,56 @@ export const SHAPES = {
             if (radiusMatch) cmd.radius = parseFloat(radiusMatch[1]);
             if (heightMatch) cmd.height = parseFloat(heightMatch[1]);
         }
+    },
+    gear: {
+        aliases: [],
+        createGeometry: (cmd) => {
+            const shape = new THREE.Shape();
+
+            const innerRadius = cmd.radius - cmd.toothHeight;
+            const outerRadius = cmd.radius;
+            const angleStep = (Math.PI * 2) / cmd.teeth;
+            const toothAngle = angleStep * 0.5; // Width of the tooth
+
+            for (let i = 0; i < cmd.teeth; i++) {
+                const angle = i * angleStep;
+
+                // Start of the valley
+                shape.lineTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+
+                // First side of the tooth
+                shape.lineTo(Math.cos(angle + toothAngle * 0.1) * innerRadius, Math.sin(angle + toothAngle * 0.1) * innerRadius);
+
+                // Top of the tooth
+                shape.lineTo(Math.cos(angle + toothAngle * 0.5) * outerRadius, Math.sin(angle + toothAngle * 0.5) * outerRadius);
+
+                // Second side of the tooth
+                shape.lineTo(Math.cos(angle + toothAngle * 0.9) * innerRadius, Math.sin(angle + toothAngle * 0.9) * innerRadius);
+            }
+            shape.closePath();
+
+            // Create the central hole
+            if (cmd.holeRadius > 0) {
+                const holePath = new THREE.Path();
+                holePath.absarc(0, 0, cmd.holeRadius, 0, Math.PI * 2, false);
+                shape.holes.push(holePath);
+            }
+
+            const extrudeSettings = {
+                steps: 1,
+                depth: cmd.height,
+                bevelEnabled: false,
+            };
+
+            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        },
+        parseParams: (sentence, cmd) => {
+            cmd.teeth = parseInt(sentence.match(/(\d+)\s+teeth/)?.[1] || 12);
+            cmd.radius = parseFloat(sentence.match(/radius\s+(-?\d+\.?\d*)/)?.[1] || 2);
+            cmd.height = parseFloat(sentence.match(/height\s+(-?\d+\.?\d*)/)?.[1] || 0.5);
+            cmd.holeRadius = parseFloat(sentence.match(/hole\s+radius\s+(-?\d+\.?\d*)/)?.[1] || 0.5);
+            cmd.toothHeight = parseFloat(sentence.match(/tooth\s+height\s+(-?\d+\.?\d*)/)?.[1] || 0.5);
+        }
     }
 };
 
