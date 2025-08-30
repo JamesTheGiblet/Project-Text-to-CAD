@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Text-to-CAD Program</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Professional Text-to-CAD</h1>
+            <p class="subtitle">Create and manipulate 3D objects with natural language commands</p>
+        </header>
+        
+        <div class="panel commands-panel">
+            <div class="input-controls">
+                <div class="selection-mode">
+                    <button class="mode-btn active" data-mode="object">Object</button>
+                    <button class="mode-btn" data-mode="face">Face</button>
+                    <button class="mode-btn" data-mode="edge">Edge</button>
+                    <button class="mode-btn" data-mode="vertex">Vertex</button>
+                </div>
+                
+                <div class="examples-dropdown">
+                    <select class="examples-select" id="examplesSelect" title="Example CAD commands">
+                        <option value="">Choose an example command...</option>
+                        <optgroup label="Basic Shapes">
+                            <option value="Create a red cube with side length 50">Create a red cube with side 50</option>
+                            <option value="Add a blue sphere radius 30">Add a blue sphere radius 30</option>
+                            <option value="Make a green cylinder r=20 h=60">Make a green cylinder r=20 h=60</option>
+                            <option value="Create a yellow cone radius 25 height 50">Create a yellow cone radius 25 height 50</option>
+                        </optgroup>
+                        <optgroup label="Face Operations">
+                            <option value="Select face 0 and extrude by 20">Select face 0 and extrude by 20</option>
+                            <option value="Inset selected face by 5">Inset selected face by 5</option>
+                            <option value="Select face 2 and subdivide">Select face 2 and subdivide</option>
+                        </optgroup>
+                        <optgroup label="Edge Operations">
+                            <option value="Select edge 3 and bevel by 5">Select edge 3 and bevel by 5</option>
+                            <option value="Crease selected edges">Crease selected edges</option>
+                            <option value="Loop cut and slide">Loop cut and slide</option>
+                        </optgroup>
+                        <optgroup label="Vertex Operations">
+                            <option value="Select vertex 2 and move up by 15">Select vertex 2 and move up by 15</option>
+                            <option value="Merge selected vertices">Merge selected vertices</option>
+                        </optgroup>
+                        <optgroup label="Transformations">
+                            <option value="Move the cube to position 50 0 25">Move the cube to position 50 0 25</option>
+                            <option value="Rotate the sphere 45 degrees around Y">Rotate the sphere 45 degrees around Y</option>
+                            <option value="Scale the cylinder by 1.5 on X axis">Scale the cylinder by 1.5 on X axis</option>
+                        </optgroup>
+                        <optgroup label="Advanced Operations">
+                            <option value="Array the cube 5 times along X axis with spacing 60">Array the cube 5 times along X spacing 60</option>
+                            <option value="Mirror object across YZ plane">Mirror object across YZ plane</option>
+                            <option value="Boolean subtract sphere from cube">Boolean subtract sphere from cube</option>
+                        </optgroup>
+                        <optgroup label="Materials">
+                            <option value="Make object transparent 50%">Make object transparent 50%</option>
+                            <option value="Change color to purple">Change color to purple</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <textarea class="command-input" id="commandInput" placeholder="Enter CAD commands:
+• Create a red cube with side 50
+• Select face 1 and extrude by 20
+• Move selected vertices up by 10
+• Rotate selection 45 degrees around Y"></textarea>
+                <button class="submit-btn" id="submitButton">Execute Command</button>
+            </div>
+            
+            <h2 class="panel-title">Command History</h2>
+            <div class="command-list" id="commandList">
+                <div class="command-item">
+                    <div class="command-icon">💡</div>
+                    <div class="command-text">
+                        <strong>Welcome to Text-CAD!</strong><br>
+                        <small>Use the dropdown above or type commands directly</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel preview-panel">
+            <h2 class="viewport-title">3D Viewport</h2>
+            <div class="canvas-container">
+                <canvas id="previewCanvas"></canvas>
+                <div class="selection-info" id="selectionInfo">
+                    Mode: Object | Selected: None
+                </div>
+            </div>
+            <div class="object-controls">
+                <button class="control-btn" id="resetView">Reset View</button>
+                <button class="control-btn" id="clearScene">Clear All</button>
+                <button class="control-btn" id="wireframe">Wireframe</button>
+                <button class="control-btn" id="topView">Top View</button>
+                <button class="control-btn" id="frontView">Front View</button>
+                <button class="control-btn" id="isoView">ISO View</button>
+            </div>
+        </div>
+        
+        <div class="panel properties-panel">
+            <div class="section">
+                <h3>Scene Objects</h3>
+                <div class="objects-list" id="objectsList"></div>
+            </div>
+            
+            <div class="section">
+                <h3>Selection</h3>
+                <div id="selectionProperties">
+                    <p class="no-selection">No selection</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>Transform</h3>
+                <button class="control-btn transform-btn" id="moveMode">Move (G)</button>
+                <button class="control-btn transform-btn" id="rotateMode">Rotate (R)</button>
+                <button class="control-btn transform-btn scale-btn" id="scaleMode">Scale (S)</button>
+            </div>
+        </div>
+        
+        <footer class="main-footer">
+            <p>Professional Text-to-CAD System | Full vertex/edge/face selection and manipulation</p>
+        </footer>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
